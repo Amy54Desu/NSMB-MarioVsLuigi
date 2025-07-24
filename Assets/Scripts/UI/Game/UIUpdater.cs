@@ -306,7 +306,7 @@ namespace NSMB.UI.Game {
             if (objective != cachedObjective) {
                 cachedObjective = objective;
                 string objectiveString = gamemode.ObjectiveSymbolPrefix + "x" + cachedObjective;
-                if (gamemode is StarChasersGamemode && !teamsEnabled) {
+                if (gamemode is StarChasersGamemode or IceRunGamemode && !teamsEnabled) {
                     objectiveString += "/" + rules.StarsToWin;
                 }
 

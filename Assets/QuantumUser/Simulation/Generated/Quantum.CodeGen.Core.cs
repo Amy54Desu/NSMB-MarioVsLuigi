@@ -834,6 +834,32 @@ namespace Quantum {
     }
   }
   [StructLayout(LayoutKind.Explicit)]
+  public unsafe partial struct IceRunData {
+    public const Int32 SIZE = 16;
+    public const Int32 ALIGNMENT = 8;
+    [FieldOffset(8)]
+    public FP PropellerTime;
+    [FieldOffset(0)]
+    public QBoolean HasPropeller;
+    [FieldOffset(4)]
+    public QBoolean WasPropeller;
+    public override Int32 GetHashCode() {
+      unchecked { 
+        var hash = 13781;
+        hash = hash * 31 + PropellerTime.GetHashCode();
+        hash = hash * 31 + HasPropeller.GetHashCode();
+        hash = hash * 31 + WasPropeller.GetHashCode();
+        return hash;
+      }
+    }
+    public static void Serialize(void* ptr, FrameSerializer serializer) {
+        var p = (IceRunData*)ptr;
+        QBoolean.Serialize(&p->HasPropeller, serializer);
+        QBoolean.Serialize(&p->WasPropeller, serializer);
+        FP.Serialize(&p->PropellerTime, serializer);
+    }
+  }
+  [StructLayout(LayoutKind.Explicit)]
   public unsafe partial struct Input {
     public const Int32 SIZE = 108;
     public const Int32 ALIGNMENT = 4;
@@ -1064,7 +1090,7 @@ namespace Quantum {
   }
   [StructLayout(LayoutKind.Explicit)]
   public unsafe partial struct _globals_ {
-    public const Int32 SIZE = 2888;
+    public const Int32 SIZE = 2904;
     public const Int32 ALIGNMENT = 8;
     [FieldOffset(0)]
     public AssetRef<Map> Map;
@@ -1099,7 +1125,7 @@ namespace Quantum {
     public BitSet64 UsedStarSpawns;
     [FieldOffset(1672)]
     public Int32 UsedStarSpawnCount;
-    [FieldOffset(1720)]
+    [FieldOffset(1736)]
     public GameRules Rules;
     [FieldOffset(1650)]
     public GameState GameState;
@@ -1115,7 +1141,7 @@ namespace Quantum {
     public UInt16 AutomaticStageRefreshInterval;
     [FieldOffset(1654)]
     public UInt16 AutomaticStageRefreshTimer;
-    [FieldOffset(1768)]
+    [FieldOffset(1784)]
     [FramePrinter.FixedArrayAttribute(typeof(PlayerInformation), 10)]
     private fixed Byte _PlayerInfo_[1120];
     [FieldOffset(1648)]
@@ -1126,6 +1152,10 @@ namespace Quantum {
     public Int32 WinningTeam;
     [FieldOffset(1684)]
     public QBoolean HasWinner;
+    [FieldOffset(1720)]
+    public EntityRef PropellerPlayer;
+    [FieldOffset(1712)]
+    public EntityRef OldPropellerPlayer;
     [FieldOffset(1680)]
     public PlayerRef Host;
     [FieldOffset(1688)]
@@ -1134,7 +1164,7 @@ namespace Quantum {
     [FieldOffset(1692)]
     [AllocateOnComponentAdded()]
     public QListPtr<BannedPlayerInfo> BannedPlayerIds;
-    [FieldOffset(1712)]
+    [FieldOffset(1728)]
     public FP Timer;
     public FixedArray<Input> input {
       get {
@@ -1178,6 +1208,8 @@ namespace Quantum {
         hash = hash * 31 + TotalMarios.GetHashCode();
         hash = hash * 31 + WinningTeam.GetHashCode();
         hash = hash * 31 + HasWinner.GetHashCode();
+        hash = hash * 31 + PropellerPlayer.GetHashCode();
+        hash = hash * 31 + OldPropellerPlayer.GetHashCode();
         hash = hash * 31 + Host.GetHashCode();
         hash = hash * 31 + PlayerDatas.GetHashCode();
         hash = hash * 31 + BannedPlayerIds.GetHashCode();
@@ -1225,6 +1257,8 @@ namespace Quantum {
         QList.Serialize(&p->BannedPlayerIds, serializer, Statics.SerializeBannedPlayerInfo);
         Quantum.BitSet64.Serialize(&p->UsedStarSpawns, serializer);
         EntityRef.Serialize(&p->MainBigStar, serializer);
+        EntityRef.Serialize(&p->OldPropellerPlayer, serializer);
+        EntityRef.Serialize(&p->PropellerPlayer, serializer);
         FP.Serialize(&p->Timer, serializer);
         Quantum.GameRules.Serialize(&p->Rules, serializer);
         FixedArray.Serialize(p->PlayerInfo, serializer, Statics.SerializePlayerInformation);
@@ -1233,20 +1267,25 @@ namespace Quantum {
   [StructLayout(LayoutKind.Explicit)]
   [Union()]
   public unsafe partial struct GamemodeSpecificData {
-    public const Int32 SIZE = 8;
-    public const Int32 ALIGNMENT = 4;
+    public const Int32 SIZE = 24;
+    public const Int32 ALIGNMENT = 8;
     [FieldOffset(0)]
     private Int32 _field_used_;
-    [FieldOffset(4)]
-    [FieldOverlap(4)]
+    [FieldOffset(8)]
+    [FieldOverlap(8)]
     [FramePrinter.PrintIf("_field_used_", Quantum.GamemodeSpecificData.STARCHASERS)]
     private StarChasersData _StarChasers;
-    [FieldOffset(4)]
-    [FieldOverlap(4)]
+    [FieldOffset(8)]
+    [FieldOverlap(8)]
     [FramePrinter.PrintIf("_field_used_", Quantum.GamemodeSpecificData.COINRUNNERS)]
     private CoinRunnersData _CoinRunners;
+    [FieldOffset(8)]
+    [FieldOverlap(8)]
+    [FramePrinter.PrintIf("_field_used_", Quantum.GamemodeSpecificData.ICERUN)]
+    private IceRunData _IceRun;
     public const Int32 STARCHASERS = 1;
     public const Int32 COINRUNNERS = 2;
+    public const Int32 ICERUN = 3;
     public Int32 Field {
       get {
         return _field_used_;
@@ -1274,12 +1313,24 @@ namespace Quantum {
         }
       }
     }
+    public IceRunData* IceRun {
+      get {
+        fixed (IceRunData* p = &_IceRun) {
+          if (_field_used_ != ICERUN) {
+            Native.Utils.Clear(p, 16);
+            _field_used_ = ICERUN;
+          }
+          return p;
+        }
+      }
+    }
     public override Int32 GetHashCode() {
       unchecked { 
         var hash = 11299;
         hash = hash * 31 + _field_used_.GetHashCode();
         hash = hash * 31 + _StarChasers.GetHashCode();
         hash = hash * 31 + _CoinRunners.GetHashCode();
+        hash = hash * 31 + _IceRun.GetHashCode();
         return hash;
       }
     }
@@ -1292,6 +1343,9 @@ namespace Quantum {
         serializer.Stream.Serialize(&p->_field_used_);
         if (p->_field_used_ == COINRUNNERS) {
           Quantum.CoinRunnersData.Serialize(&p->_CoinRunners, serializer);
+        }
+        if (p->_field_used_ == ICERUN) {
+          Quantum.IceRunData.Serialize(&p->_IceRun, serializer);
         }
         if (p->_field_used_ == STARCHASERS) {
           Quantum.StarChasersData.Serialize(&p->_StarChasers, serializer);
@@ -2301,7 +2355,7 @@ namespace Quantum {
   }
   [StructLayout(LayoutKind.Explicit)]
   public unsafe partial struct MarioPlayer : Quantum.IComponent {
-    public const Int32 SIZE = 256;
+    public const Int32 SIZE = 272;
     public const Int32 ALIGNMENT = 8;
     [FieldOffset(176)]
     public AssetRef<MarioPlayerPhysicsInfo> PhysicsAsset;
@@ -2322,10 +2376,10 @@ namespace Quantum {
     [FieldOffset(184)]
     [ExcludeFromPrototype()]
     public AssetRef<PowerupAsset> ReserveItem;
-    [FieldOffset(240)]
+    [FieldOffset(232)]
     [ExcludeFromPrototype()]
     public RNGSession RNG;
-    [FieldOffset(216)]
+    [FieldOffset(248)]
     [ExcludeFromPrototype()]
     public GamemodeSpecificData GamemodeData;
     [FieldOffset(1)]
@@ -2535,7 +2589,7 @@ namespace Quantum {
     [FieldOffset(192)]
     [ExcludeFromPrototype()]
     public EntityRef CurrentPipe;
-    [FieldOffset(224)]
+    [FieldOffset(216)]
     [ExcludeFromPrototype()]
     public FPVector2 PipeDirection;
     [FieldOffset(152)]
@@ -2721,9 +2775,9 @@ namespace Quantum {
         EntityRef.Serialize(&p->CurrentPipe, serializer);
         EntityRef.Serialize(&p->CurrentSpinner, serializer);
         EntityRef.Serialize(&p->HeldEntity, serializer);
-        Quantum.GamemodeSpecificData.Serialize(&p->GamemodeData, serializer);
         FPVector2.Serialize(&p->PipeDirection, serializer);
         RNGSession.Serialize(&p->RNG, serializer);
+        Quantum.GamemodeSpecificData.Serialize(&p->GamemodeData, serializer);
     }
   }
   [StructLayout(LayoutKind.Explicit)]
@@ -4193,6 +4247,7 @@ namespace Quantum {
       typeRegistry.Register(typeof(Quantum.Holdable), Quantum.Holdable.SIZE);
       typeRegistry.Register(typeof(Quantum.IceBlock), Quantum.IceBlock.SIZE);
       typeRegistry.Register(typeof(IceBlockBreakReason), 1);
+      typeRegistry.Register(typeof(Quantum.IceRunData), Quantum.IceRunData.SIZE);
       typeRegistry.Register(typeof(Quantum.Input), Quantum.Input.SIZE);
       typeRegistry.Register(typeof(Quantum.InputButtons), 4);
       typeRegistry.Register(typeof(IntVector2), IntVector2.SIZE);

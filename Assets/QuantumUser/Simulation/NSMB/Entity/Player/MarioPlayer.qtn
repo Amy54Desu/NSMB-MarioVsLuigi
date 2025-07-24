@@ -152,6 +152,7 @@ struct CoinRunnersData {
 union GamemodeSpecificData {
 	StarChasersData StarChasers;
 	CoinRunnersData CoinRunners;
+	IceRunData IceRun;
 }
 
 enum KnockbackStrength : Byte {
@@ -291,6 +292,10 @@ synced event MarioPlayerDestroyed {
 }
 
 event MarioPlayerLandedWithAnimation {
+	EntityRef Entity;
+}
+
+event MarioPlayerIncrementPropellerScore {
 	EntityRef Entity;
 }
 

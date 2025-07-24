@@ -31,6 +31,7 @@ namespace NSMB.UI.Game.Scoreboard {
             QuantumEvent.Subscribe<EventMarioPlayerPreRespawned>(this, OnMarioPlayerPreRespawned);
             QuantumEvent.Subscribe<EventMarioPlayerDestroyed>(this, OnMarioPlayerDestroyed);
             QuantumEvent.Subscribe<EventPlayerRemoved>(this, OnPlayerRemoved);
+            QuantumEvent.Subscribe<EventMarioPlayerIncrementPropellerScore>(this, OnMarioPlayerIncrementPropellerScore);
 
             var game = QuantumRunner.DefaultGame;
             if (game != null) {
@@ -152,6 +153,14 @@ namespace NSMB.UI.Game.Scoreboard {
             nicknameMayHaveChanged = true;
 
             UpdateEntry(f);
+        }
+
+        private unsafe void OnMarioPlayerIncrementPropellerScore(EventMarioPlayerIncrementPropellerScore e) {
+            if (e.Entity != Target) {
+                return;
+            }
+
+            UpdateEntry(e.Game.Frames.Predicted);
         }
     }
 }

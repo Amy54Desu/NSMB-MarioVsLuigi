@@ -425,11 +425,13 @@ namespace Quantum.Prototypes {
     public string _field_used_;
     public Quantum.Prototypes.StarChasersDataPrototype StarChasers;
     public Quantum.Prototypes.CoinRunnersDataPrototype CoinRunners;
+    public Quantum.Prototypes.IceRunDataPrototype IceRun;
     partial void MaterializeUser(Frame frame, ref Quantum.GamemodeSpecificData result, in PrototypeMaterializationContext context);
     public void Materialize(Frame frame, ref Quantum.GamemodeSpecificData result, in PrototypeMaterializationContext context = default) {
         switch (_field_used_) {
           case "STARCHASERS": this.StarChasers.Materialize(frame, ref *result.StarChasers, in context); break;
           case "COINRUNNERS": this.CoinRunners.Materialize(frame, ref *result.CoinRunners, in context); break;
+          case "ICERUN": this.IceRun.Materialize(frame, ref *result.IceRun, in context); break;
           case "": case null: break;
           default: PrototypeValidator.UnknownUnionField(_field_used_, in context); break;
         }
@@ -512,6 +514,20 @@ namespace Quantum.Prototypes {
     }
     public void Materialize(Frame frame, ref Quantum.IceBlock result, in PrototypeMaterializationContext context = default) {
         result.SlidingSpeed = this.SlidingSpeed;
+        MaterializeUser(frame, ref result, in context);
+    }
+  }
+  [System.SerializableAttribute()]
+  [Quantum.Prototypes.Prototype(typeof(Quantum.IceRunData))]
+  public unsafe partial class IceRunDataPrototype : StructPrototype {
+    public FP PropellerTime;
+    public QBoolean HasPropeller;
+    public QBoolean WasPropeller;
+    partial void MaterializeUser(Frame frame, ref Quantum.IceRunData result, in PrototypeMaterializationContext context);
+    public void Materialize(Frame frame, ref Quantum.IceRunData result, in PrototypeMaterializationContext context = default) {
+        result.PropellerTime = this.PropellerTime;
+        result.HasPropeller = this.HasPropeller;
+        result.WasPropeller = this.WasPropeller;
         MaterializeUser(frame, ref result, in context);
     }
   }

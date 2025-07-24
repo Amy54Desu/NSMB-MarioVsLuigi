@@ -120,6 +120,11 @@ namespace Quantum {
                     var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
                     gamemode.EnableGamemode(f);
 
+                    if (gamemode is IceRunGamemode) {
+                        var icerun = gamemode as IceRunGamemode;
+                        icerun.SelectRandomPlayer(f, true);
+                    }
+
                     f.Signals.OnGameStarting();
                     f.Events.GameStarted();
                 }

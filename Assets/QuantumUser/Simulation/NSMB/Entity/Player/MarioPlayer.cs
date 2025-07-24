@@ -190,7 +190,7 @@ namespace Quantum {
             WallslideRight = false;
             WallslideLeft = false;
             ForceJumpTimer = 0;
-            
+
             /*
             IsWaterWalking = false;
             IsFrozen = false;
@@ -199,6 +199,10 @@ namespace Quantum {
                 Runner.Despawn(FrozenCube.Object);
             }
             */
+            var icerun = f.FindAsset(f.Global->Rules.Gamemode) as IceRunGamemode;
+            if (icerun != null && icerun.IsPlayerPropeller(f, entity)) {
+                icerun.SelectRandomPlayer(f, false);
+            }
 
             if (f.Exists(HeldEntity) && f.Unsafe.TryGetPointer(HeldEntity, out Holdable* holdable)) {
                 holdable->DropWithoutThrowing(f, HeldEntity);
@@ -242,7 +246,14 @@ namespace Quantum {
             case PowerupState.IceFlower:
             case PowerupState.PropellerMushroom:
             case PowerupState.BlueShell: {
-                CurrentPowerupState = PowerupState.Mushroom;
+                var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
+                if (gamemode is IceRunGamemode) {
+                    var icerun = gamemode as IceRunGamemode;
+                    CurrentPowerupState = PowerupState.IceFlower;
+                    icerun.SelectRandomPlayer(f, false);
+                } else {
+                    CurrentPowerupState = PowerupState.Mushroom;
+                }
                 f.Signals.OnMarioPlayerDropObjective(entity, 1, attacker);
                 break;
             }
@@ -318,6 +329,8 @@ namespace Quantum {
             var physicsObject = f.Unsafe.GetPointer<PhysicsObject>(entity);
             var transform = f.Unsafe.GetPointer<Transform2D>(entity);
 
+            var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
+
             RespawnFrames = 78;
 
             if ((f.Global->Rules.IsLivesEnabled && Lives == 0) || Disconnected) {
@@ -343,7 +356,16 @@ namespace Quantum {
             PropellerLaunchFrames = 0;
             PropellerSpinFrames = 0;
             JumpState = JumpState.None;
-            PreviousPowerupState = CurrentPowerupState = PowerupState.NoPowerup;
+            if (gamemode is IceRunGamemode) {
+                var state = PowerupState.IceFlower;
+                var icerun = gamemode as IceRunGamemode;
+                if (icerun.IsPlayerPropeller(f, entity)) {
+                    state = PowerupState.PropellerMushroom;
+                }
+                PreviousPowerupState = CurrentPowerupState = state;
+            } else {
+                PreviousPowerupState = CurrentPowerupState = PowerupState.NoPowerup;
+            }
             //animationController.DisableAllModels();
             DamageInvincibilityFrames = 0;
             InvincibilityFrames = 0;

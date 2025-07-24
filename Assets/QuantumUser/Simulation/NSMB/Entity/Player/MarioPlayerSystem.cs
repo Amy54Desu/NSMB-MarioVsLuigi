@@ -48,6 +48,16 @@ namespace Quantum {
                 filter.Inputs = default;
             }
 
+            var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
+            if (gamemode is IceRunGamemode) {
+                var icerun = gamemode as IceRunGamemode;
+                if (!(mario->IsDead || mario->IsRespawning || mario->Disconnected) && icerun.IsPlayerPropeller(f, filter.Entity)) {
+                    mario->GamemodeData.IceRun->PropellerTime+=1;
+                    f.Events.MarioPlayerIncrementPropellerScore(filter.Entity);
+                    GameLogicSystem.CheckForGameEnd(f);
+                    
+                }
+            }
             var physics = f.FindAsset(filter.MarioPlayer->PhysicsAsset);
             if (HandleDeathAndRespawning(f, ref filter, stage)) {
                 HandleTerminalVelocity(f, ref filter, physics);

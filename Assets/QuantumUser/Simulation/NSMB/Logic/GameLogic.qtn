@@ -17,6 +17,10 @@ global {
 
 	int WinningTeam;
 	bool HasWinner;
+
+	// custom
+	EntityRef PropellerPlayer;
+	EntityRef OldPropellerPlayer;
 }
 
 struct PlayerInformation {
