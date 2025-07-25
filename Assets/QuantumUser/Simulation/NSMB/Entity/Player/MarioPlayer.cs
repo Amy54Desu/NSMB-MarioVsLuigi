@@ -222,6 +222,17 @@ namespace Quantum {
                 return false;
             }
 
+            bool isIceRunner = false;
+            var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
+            if (gamemode is IceRunGamemode) {
+                var icerun = gamemode as IceRunGamemode;
+                if (isIceRunner = icerun.IsPlayerPropeller(f, entity)) {
+                    icerun.SubtractOrAddScore(f, entity, -5);
+                } else {
+                    return false;
+                }
+            }
+
             QBoolean doDamage = true;
             f.Signals.OnMarioPlayerTakeDamage(entity, ref doDamage);
             if (!doDamage) {
@@ -230,33 +241,28 @@ namespace Quantum {
 
             PreviousPowerupState = CurrentPowerupState;
 
-            switch (CurrentPowerupState) {
-            case PowerupState.MiniMushroom:
-            case PowerupState.NoPowerup: {
-                Death(f, entity, false, true, attacker);
-                break;
-            }
-            case PowerupState.Mushroom: {
-                CurrentPowerupState = PowerupState.NoPowerup;
-                f.Signals.OnMarioPlayerDropObjective(entity, 1, attacker);
-                break;
-            }
-            case PowerupState.HammerSuit:
-            case PowerupState.FireFlower:
-            case PowerupState.IceFlower:
-            case PowerupState.PropellerMushroom:
-            case PowerupState.BlueShell: {
-                var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
-                if (gamemode is IceRunGamemode) {
-                    var icerun = gamemode as IceRunGamemode;
-                    CurrentPowerupState = PowerupState.IceFlower;
-                    icerun.SelectRandomPlayer(f, false);
-                } else {
-                    CurrentPowerupState = PowerupState.Mushroom;
+            if (!isIceRunner) {
+                switch (CurrentPowerupState) {
+                case PowerupState.MiniMushroom:
+                case PowerupState.NoPowerup: {
+                    Death(f, entity, false, true, attacker);
+                    break;
                 }
-                f.Signals.OnMarioPlayerDropObjective(entity, 1, attacker);
-                break;
-            }
+                case PowerupState.Mushroom: {
+                    CurrentPowerupState = PowerupState.NoPowerup;
+                    f.Signals.OnMarioPlayerDropObjective(entity, 1, attacker);
+                    break;
+                }
+                case PowerupState.HammerSuit:
+                case PowerupState.FireFlower:
+                case PowerupState.IceFlower:
+                case PowerupState.PropellerMushroom:
+                case PowerupState.BlueShell: {
+                    CurrentPowerupState = PowerupState.Mushroom;
+                    f.Signals.OnMarioPlayerDropObjective(entity, 1, attacker);
+                    break;
+                }
+                }
             }
 
             IsDrilling &= !IsPropellerFlying;

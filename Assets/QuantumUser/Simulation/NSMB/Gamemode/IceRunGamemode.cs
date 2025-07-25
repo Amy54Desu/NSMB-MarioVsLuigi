@@ -1,5 +1,6 @@
 using Photon.Deterministic;
 using System;
+using System.Drawing.Drawing2D;
 
 namespace Quantum
 {
@@ -132,15 +133,18 @@ namespace Quantum
                 }
 
                 marios[validPlayers++] = entity;
-                UnityEngine.Debug.Log("[IceRun] - Added player " + marios[validPlayers-1]);
             }
 
             // pick a random player from the list
            if (validPlayers > 0) {
                 int rng = f.RNG->Next(0, validPlayers);
                 SetPlayerAsPropeller(f, marios[rng]);
-                UnityEngine.Debug.Log("[IceRun] - Selected Player " + marios[rng]);
-           }
+           } else {
+                // reset player state
+                f.Unsafe.TryGetPointer(f.Global->PropellerPlayer, out MarioPlayer* mario);
+                mario->PreviousPowerupState = mario->CurrentPowerupState;
+                mario->CurrentPowerupState = PowerupState.PropellerMushroom;
+            }
         }
 
         public bool IsPlayerPropeller(Frame f, EntityRef entity) {
@@ -150,6 +154,31 @@ namespace Quantum
         public bool IsPlayerPropeller(Frame f, MarioPlayer* mario) {
             f.Unsafe.TryGetPointer(f.Global->PropellerPlayer, out MarioPlayer* propMario);
             return mario == propMario;
+        }
+
+        public bool IsPlayerPropeller(Frame f, MarioPlayer mario) {
+            f.Unsafe.TryGetPointer(f.Global->PropellerPlayer, out MarioPlayer* propMario);
+            return &mario == propMario;
+        }
+
+        public FP SubtractOrAddScore(Frame f, EntityRef entity, FP num) {
+            f.Unsafe.TryGetPointer(entity, out MarioPlayer* mario);
+            return _SubtractOrAddScore(f, mario, num);
+        }
+
+        public FP SubtractOrAddScore(Frame f, MarioPlayer mario, FP num) {
+            return _SubtractOrAddScore(f, &mario, num);
+        }
+        
+        private FP _SubtractOrAddScore(Frame f, MarioPlayer* marioPtr, FP num) {
+            var icerun = marioPtr->GamemodeData.IceRun;
+            icerun->PropellerTime += num*60;
+
+            if (num < 0) {
+                return icerun->PropellerTime = FPMath.Max(icerun->PropellerTime, 0);
+            } else {
+                return icerun->PropellerTime = FPMath.Min(icerun->PropellerTime, f.Global->Rules.StarsToWin);
+            }
         }
     }
 }

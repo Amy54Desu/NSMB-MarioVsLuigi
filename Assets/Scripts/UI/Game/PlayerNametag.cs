@@ -55,6 +55,7 @@ namespace NSMB.UI.Game {
             QuantumEvent.Subscribe<EventMarioPlayerDied>(this, OnMarioPlayerDied);
             QuantumEvent.Subscribe<EventMarioPlayerPreRespawned>(this, OnMarioPlayerPreRespawned);
             QuantumEvent.Subscribe<EventPlayerRemoved>(this, OnPlayerRemoved);
+            QuantumEvent.Subscribe<EventMarioPlayerIncrementPropellerScore>(this, OnMarioPlayerIncrementPropellerScore);
             QuantumCallback.Subscribe<CallbackGameResynced>(this, OnGameResynced);
 
             var game = QuantumRunner.DefaultGame;
@@ -168,6 +169,14 @@ namespace NSMB.UI.Game {
         }
 
         private void OnMarioPlayerPreRespawned(EventMarioPlayerPreRespawned e) {
+            if (e.Entity != Entity) {
+                return;
+            }
+
+            UpdateText(e.Game.Frames.Predicted);
+        }
+
+        private void OnMarioPlayerIncrementPropellerScore(EventMarioPlayerIncrementPropellerScore e) {
             if (e.Entity != Entity) {
                 return;
             }
