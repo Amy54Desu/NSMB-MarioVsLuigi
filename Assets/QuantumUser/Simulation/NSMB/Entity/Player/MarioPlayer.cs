@@ -398,10 +398,11 @@ namespace Quantum {
 
         public void Respawn(Frame f, EntityRef entity) {
             var physicsObject = f.Unsafe.GetPointer<PhysicsObject>(entity);
+            var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
 
             IsDead = false;
             IsRespawning = false;
-            DamageInvincibilityFrames = 120;
+            DamageInvincibilityFrames = (byte)(gamemode.DisableSpawningInvinciblity ? 0 : 120);
             CoyoteTimeFrames = 0;
             ForceJumpTimer = 0;
 

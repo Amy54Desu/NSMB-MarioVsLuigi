@@ -136,10 +136,19 @@ namespace Quantum {
             if (!physicsObject->IsTouchingGround || swimming) {
                 mario->IsSkidding = false;
             }
-
             ref var inputs = ref filter.Inputs;
             bool mega = mario->CurrentPowerupState == PowerupState.MegaMushroom;
             bool run = (inputs.Sprint.IsDown || mega || mario->IsPropellerFlying) && (mega || !mario->IsSpinnerFlying);
+            bool isIcePlayer = false;
+
+            // check if the player is propeller
+            var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
+            if (gamemode is IceRunGamemode) {
+                var icerun = gamemode as IceRunGamemode;
+                if (!icerun.IsPlayerPropeller(f, mario)) {
+                    isIcePlayer = true;
+                }
+            }
             int maxStage;
             if (swimming) {
                 if (mario->CurrentPowerupState == PowerupState.BlueShell) {
@@ -147,7 +156,7 @@ namespace Quantum {
                 } else {
                     maxStage = physics.SwimMaxVelocity.Length - 1;
                 }
-            } else if (mario->IsStarmanInvincible && run && physicsObject->IsTouchingGround) {
+            } else if ((mario->IsStarmanInvincible || isIcePlayer) && run && physicsObject->IsTouchingGround) {
                 maxStage = physics.StarSpeedStage;
             } else if (run) {
                 maxStage = physics.RunSpeedStage;

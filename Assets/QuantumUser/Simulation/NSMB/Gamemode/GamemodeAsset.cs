@@ -1,6 +1,7 @@
 using Photon.Deterministic;
 using Quantum.Prototypes;
 using System;
+using UnityEngine;
 
 namespace Quantum {
     public abstract unsafe class GamemodeAsset : AssetObject {
@@ -10,6 +11,7 @@ namespace Quantum {
         public AssetRef<CoinItemAsset>[] AllCoinItems;
         public AssetRef<CoinItemAsset> FallbackCoinItem;
         public AssetRef<EntityPrototype> LooseCoinPrototype;
+        public bool DisableSpawningInvinciblity;
 
         public GameRulesPrototype DefaultRules;
 
@@ -22,6 +24,10 @@ namespace Quantum {
         public abstract int GetObjectiveCount(Frame f, PlayerRef player);
 
         public abstract int GetObjectiveCount(Frame f, MarioPlayer* mario);
+
+        public abstract Color GetPlayerColor(Frame f, PlayerRef player, float s = 1, float v = 1, bool considerDisqualifications = true);
+        public abstract Color GetTeamColor(Frame f, int team, float s = 1, float v = 1);
+        public static readonly Color spectatorColor = new(0.8f, 0.8f, 0.8f, 0.7f);
 
         public virtual CoinItemAsset GetRandomItem(Frame f, MarioPlayer* mario, bool fromBlock) {
             var stage = f.FindAsset<VersusStageData>(f.Map.UserAsset);
