@@ -16,6 +16,9 @@ namespace Quantum {
         public bool CustomPowerupsEnabled;
         public bool DrawOnTimeUp;
 
+        // for icerun
+        public int ScoresToWin;
+
         public override void Serialize(BitStream stream) {
             if (stream.Writing) {
                 stream.WriteUShort((ushort) EnabledChanges);
@@ -32,6 +35,7 @@ namespace Quantum {
             stream.Serialize(ref TeamsEnabled);
             stream.Serialize(ref CustomPowerupsEnabled);
             stream.Serialize(ref DrawOnTimeUp);
+            stream.Serialize(ref ScoresToWin);
         }
 
         public unsafe void Execute(Frame f, PlayerRef sender, PlayerData* playerData) {
@@ -79,6 +83,9 @@ namespace Quantum {
             if (rulesChanges.HasFlag(Rules.DrawOnTimeUp)) {
                 rules.DrawOnTimeUp = DrawOnTimeUp;
             }
+            if (rulesChanges.HasFlag(Rules.ScoresToWin)) {
+                //rules.ScoresToWin = ScoresToWin;
+            }
 
             f.Global->Rules = rules;
             f.Events.RulesChanged(gamemodeChanged, levelChanged);
@@ -100,6 +107,7 @@ namespace Quantum {
             TeamsEnabled = 1 << 6,
             CustomPowerupsEnabled = 1 << 7,
             DrawOnTimeUp = 1 << 8,
+            ScoresToWin = 1 << 9,
         }
     }
 }

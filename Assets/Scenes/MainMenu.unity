@@ -13635,10 +13635,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1695760184}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 295.26233, y: -16}
+  m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &322257449
 MonoBehaviour:
@@ -41483,10 +41483,10 @@ RectTransform:
   - {fileID: 784169233}
   m_Father: {fileID: 1156569319}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 40}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 353.26233, y: -67}
+  m_SizeDelta: {x: 676.52466, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &832882731
 GameObject:
@@ -49355,6 +49355,8 @@ MonoBehaviour:
     TranslationKey: ui.inroom.settings.game.teams.description
   - Rule: 128
     TranslationKey: ui.inroom.settings.game.powerups.description
+  - Rule: 512
+    TranslationKey: ui.inroom.settings.game.score.description
 --- !u!1 &903610272
 GameObject:
   m_ObjectHideFlags: 0
@@ -54902,7 +54904,7 @@ MonoBehaviour:
   changeColor: 0
   selectedColor: {r: 1, g: 1, b: 1, a: 1}
   deselectedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  translationKey: Score to Win
+  translationKey: ui.inroom.settings.game.scores
   twoSided: 0
 --- !u!114 &1079361460
 MonoBehaviour:
@@ -64695,7 +64697,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: <sprite name=room_stars> 10
+  m_text: <sprite name=room_timer> 10
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 38e8769007229044bb229d69f8cbae74, type: 2}
   m_sharedMaterial: {fileID: 3023213983796840565, guid: 38e8769007229044bb229d69f8cbae74,
@@ -96871,10 +96873,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1695760184}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 146.63116, y: -16}
+  m_SizeDelta: {x: 261.26233, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1512472443
 MonoBehaviour:
@@ -106988,10 +106990,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1156569319}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 24}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 353.26233, y: -27}
+  m_SizeDelta: {x: 676.52466, y: 24}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1699537311
 MonoBehaviour:
@@ -123526,8 +123528,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 0}
   canvas: {fileID: 2030938839}
   label: {fileID: 1311479329}
-  labelPrefix: '<sprite name=room_stars> '
-  ruleType: 4
+  labelPrefix: '<sprite name=room_timer> '
+  ruleType: 512
   clickToEdit: 0
   dontAutosave: 0
   editingColor: {r: 1, g: 1, b: 1, a: 1}
@@ -123535,9 +123537,9 @@ MonoBehaviour:
   leftArrow: {fileID: 1817856975}
   rightArrow: {fileID: 1371309771}
   cursorSfx: {fileID: 252585806}
-  minValue: 3
-  maxValue: 30
-  step: 1
+  minValue: 10
+  maxValue: 120
+  step: 5
   minimumValueIsOff: 0
 --- !u!114 &1978330374
 MonoBehaviour:
@@ -123572,7 +123574,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   panel: {fileID: 901415633}
-  rule: 4
+  rule: 512
 --- !u!1 &1980070549
 GameObject:
   m_ObjectHideFlags: 0

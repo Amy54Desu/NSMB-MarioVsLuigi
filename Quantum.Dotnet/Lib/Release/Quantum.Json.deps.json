@@ -7,12 +7,12 @@
   "targets": {
     ".NETStandard,Version=v2.1": {},
     ".NETStandard,Version=v2.1/": {
-      "Quantum.Json/3.0.0.1548-Release": {
+      "Quantum.Json/3.0.1.1609-Release": {
         "dependencies": {
           "Newtonsoft.Json": "13.0.3",
-          "Quantum.Deterministic": "3.0.0.1548-Release",
-          "Quantum.Engine": "3.0.0.1548-Release",
-          "Quantum.Log": "3.0.0.1548-Release"
+          "Quantum.Deterministic": "3.0.1.1609-Release",
+          "Quantum.Engine": "3.0.1.1609-Release",
+          "Quantum.Log": "3.0.1.1609-Release"
         },
         "runtime": {
           "Quantum.Json.dll": {}
@@ -34,44 +34,44 @@
           }
         }
       },
-      "Quantum.Deterministic/3.0.0.1548-Release": {
+      "Quantum.Deterministic/3.0.1.1609-Release": {
         "dependencies": {
-          "Quantum.Log": "3.0.0.1548-Release"
+          "Quantum.Log": "3.0.1.1609-Release"
         },
         "runtime": {
           "Quantum.Deterministic.dll": {
-            "assemblyVersion": "3.0.0.1548-Release",
-            "fileVersion": "3.0.0.1548"
+            "assemblyVersion": "3.0.1.1609-Release",
+            "fileVersion": "3.0.1.1609"
           }
         }
       },
-      "Quantum.Engine/3.0.0.1548-Release": {
+      "Quantum.Engine/3.0.1.1609-Release": {
         "dependencies": {
           "JetBrains.Annotations": "2023.3.0",
-          "Quantum.Deterministic": "3.0.0.1548-Release"
+          "Quantum.Deterministic": "3.0.1.1609-Release"
         },
         "runtime": {
           "Quantum.Engine.dll": {
-            "assemblyVersion": "3.0.0.1548-Release",
-            "fileVersion": "3.0.0.1548"
+            "assemblyVersion": "3.0.1.1609-Release",
+            "fileVersion": "3.0.1.1609"
           }
         }
       },
-      "Quantum.Log/3.0.0.1548-Release": {
+      "Quantum.Log/3.0.1.1609-Release": {
         "dependencies": {
           "JetBrains.Annotations": "2023.3.0"
         },
         "runtime": {
           "Quantum.Log.dll": {
-            "assemblyVersion": "3.0.0.1548-Release",
-            "fileVersion": "3.0.0.1548"
+            "assemblyVersion": "3.0.1.1609-Release",
+            "fileVersion": "3.0.1.1609"
           }
         }
       }
     }
   },
   "libraries": {
-    "Quantum.Json/3.0.0.1548-Release": {
+    "Quantum.Json/3.0.1.1609-Release": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -90,17 +90,17 @@
       "path": "newtonsoft.json/13.0.3",
       "hashPath": "newtonsoft.json.13.0.3.nupkg.sha512"
     },
-    "Quantum.Deterministic/3.0.0.1548-Release": {
+    "Quantum.Deterministic/3.0.1.1609-Release": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "Quantum.Engine/3.0.0.1548-Release": {
+    "Quantum.Engine/3.0.1.1609-Release": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "Quantum.Log/3.0.0.1548-Release": {
+    "Quantum.Log/3.0.1.1609-Release": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

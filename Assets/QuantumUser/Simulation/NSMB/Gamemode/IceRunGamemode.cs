@@ -259,7 +259,15 @@ namespace Quantum
                     return spectatorColor;
                 }
 
-                if (IsPlayerPropeller(f, playerDataEntity)) {
+                MarioPlayer* checkingPlayer = null;
+                var marioFilter = f.Filter<MarioPlayer>();
+                while (marioFilter.NextUnsafe(out _, out MarioPlayer* mario)) {
+                    if (mario->PlayerRef == player) {
+                        checkingPlayer = mario;
+                        break;
+                    }
+                }
+                if (IsPlayerPropeller(f, checkingPlayer)) {
                     return Color.cyan;
                 }
                 return Color.red;

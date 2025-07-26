@@ -380,5 +380,10 @@
   "gamemode.starchasers": "ビッグスター(クラシック)",
   "gamemode.starchasers.description": "DS時代のオーソドックスなマリオVSルイージのゲームモード!ランダムに発生するビッグスターをゲットして勝利しよう。コインを集めてアイテムを手に入れ、ほかのプレイヤーを攻撃してスターを奪おう。",
   "gamemode.coinrunners": "コインバトル",
-  "gamemode.coinrunners.description": "他のプレイヤーを攻撃してパープルコインをドロップさせよう。時間切れで一番多くのコインを持っていたものが勝者となる!スターコインはパープルコイン25枚分の価値がある。ミスすると所持パープルコインの20%を失うぞ。負けが込んでいるなら、黄色のコインを集めることでパープルコインを大量にゲットできるゴールドブロックを得られるかも!"
+  "gamemode.coinrunners.description": "他のプレイヤーを攻撃してパープルコインをドロップさせよう。時間切れで一番多くのコインを持っていたものが勝者となる!スターコインはパープルコイン25枚分の価値がある。ミスすると所持パープルコインの20%を失うぞ。負けが込んでいるなら、黄色のコインを集めることでパープルコインを大量にゲットできるゴールドブロックを得られるかも!",
+
+  "gamemode.icerun": "アイスラナー",
+  "gamemode.icerun.description": "one player will start as the propeller player, and the other players have the ice flower. The player with the most time being the propeller player will win the game! Freezing the propeller player will give you the suit!",
+  "ui.inroom.settings.game.scores": "Scores to win",
+  "ui.inroom.settings.game.scores.description": "The amount of time needed until you win the game."
 }
