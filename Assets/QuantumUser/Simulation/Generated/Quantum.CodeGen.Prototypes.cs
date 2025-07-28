@@ -405,6 +405,7 @@ namespace Quantum.Prototypes {
     public QBoolean TeamsEnabled;
     public QBoolean CustomPowerupsEnabled;
     public QBoolean DrawOnTimeUp;
+    public Int32 ScoresToWin;
     partial void MaterializeUser(Frame frame, ref Quantum.GameRules result, in PrototypeMaterializationContext context);
     public void Materialize(Frame frame, ref Quantum.GameRules result, in PrototypeMaterializationContext context = default) {
         result.Stage = this.Stage;
@@ -416,6 +417,7 @@ namespace Quantum.Prototypes {
         result.TeamsEnabled = this.TeamsEnabled;
         result.CustomPowerupsEnabled = this.CustomPowerupsEnabled;
         result.DrawOnTimeUp = this.DrawOnTimeUp;
+        result.ScoresToWin = this.ScoresToWin;
         MaterializeUser(frame, ref result, in context);
     }
   }
@@ -521,13 +523,9 @@ namespace Quantum.Prototypes {
   [Quantum.Prototypes.Prototype(typeof(Quantum.IceRunData))]
   public unsafe partial class IceRunDataPrototype : StructPrototype {
     public FP PropellerTime;
-    public QBoolean HasPropeller;
-    public QBoolean WasPropeller;
     partial void MaterializeUser(Frame frame, ref Quantum.IceRunData result, in PrototypeMaterializationContext context);
     public void Materialize(Frame frame, ref Quantum.IceRunData result, in PrototypeMaterializationContext context = default) {
         result.PropellerTime = this.PropellerTime;
-        result.HasPropeller = this.HasPropeller;
-        result.WasPropeller = this.WasPropeller;
         MaterializeUser(frame, ref result, in context);
     }
   }

@@ -96,7 +96,7 @@ namespace NSMB.Sound {
             if (gamemode is StarChasersGamemode) {
                 speedup |= gamemode.GetFirstPlaceObjectiveCount(f) >= rules.StarsToWin - 1;
             } else if (gamemode is IceRunGamemode) {
-                speedup |= gamemode.GetFirstPlaceObjectiveCount(f) >= rules.StarsToWin - 10;
+                speedup |= gamemode.GetFirstPlaceObjectiveCount(f) >= rules.ScoresToWin - 10;
             }
 
             if (!speedup && rules.IsLivesEnabled) {

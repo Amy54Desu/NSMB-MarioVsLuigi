@@ -84,7 +84,7 @@ namespace Quantum {
                 rules.DrawOnTimeUp = DrawOnTimeUp;
             }
             if (rulesChanges.HasFlag(Rules.ScoresToWin)) {
-                //rules.ScoresToWin = ScoresToWin;
+                rules.ScoresToWin = ScoresToWin;
             }
 
             f.Global->Rules = rules;

@@ -192,6 +192,7 @@ namespace NSMB.Entities.Player {
             QuantumEvent.Subscribe<EventPhysicsObjectLanded>(this, OnPhysicsObjectLanded, FilterOutReplayFastForward);
             QuantumEvent.Subscribe<EventMarioPlayerLandedWithAnimation>(this, OnMarioPlayerLandedWithAnimation, FilterOutReplayFastForward);
             QuantumEvent.Subscribe<EventEnemyKicked>(this, OnEnemyKicked, FilterOutReplayFastForward);
+            QuantumEvent.Subscribe<EventMarioPlayerChangedPropeller>(this, OnMarioPlayerChangedPropeller);
         }
 
         public override void OnActivate(Frame f) {
@@ -1243,6 +1244,16 @@ namespace NSMB.Entities.Player {
             }
 
             sfx.PlayOneShot(SoundEffect.Powerup_HammerSuit_Bounce);
+        }
+
+        private void OnMarioPlayerChangedPropeller(EventMarioPlayerChangedPropeller e) {
+            Frame f = e.Game.Frames.Predicted;
+            PlayerRef player = PlayerRef.None;
+            if (f.Unsafe.TryGetPointer(EntityRef, out MarioPlayer* mario)) {
+                player = mario->PlayerRef;
+            }
+
+            GlowColor = Utils.GetPlayerColor(f, player);
         }
     }
 }

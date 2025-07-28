@@ -42,6 +42,7 @@ namespace NSMB.UI.Game.Track {
             QuantumCallback.Subscribe<CallbackGameResynced>(this, OnGameResynced);
             QuantumEvent.Subscribe<EventMarioPlayerDied>(this, OnMarioPlayerDied);
             QuantumEvent.Subscribe<EventMarioPlayerRespawned>(this, OnMarioPlayerRespawned);
+            QuantumEvent.Subscribe<EventMarioPlayerChangedPropeller>(this, OnMarioPlayerChangedPropeller);
         }
 
         public override void OnUpdateView() {
@@ -91,6 +92,16 @@ namespace NSMB.UI.Game.Track {
                 StopCoroutine(flashRoutine);
             }
             flashRoutine = null;
+        }
+
+        public void OnMarioPlayerChangedPropeller(EventMarioPlayerChangedPropeller e) {
+            Frame f = e.Game.Frames.Predicted;
+            PlayerRef player = PlayerRef.None;
+            if (f.Unsafe.TryGetPointer(targetEntity, out MarioPlayer* mario)) {
+                player = mario->PlayerRef;
+            }
+            // update all enteries
+            image.color = Utils.GetPlayerColor(f, player);
         }
     }
 }

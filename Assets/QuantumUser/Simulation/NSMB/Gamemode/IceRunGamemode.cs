@@ -43,9 +43,9 @@ namespace Quantum
                 }
             }
 
-            // End Condition: team gets to enough stars
+            // End Condition: team has had propeller for that long
             int? winningTeam = GetWinningTeam(f, out int time);
-            if (winningTeam != null && time >= f.Global->Rules.StarsToWin) {
+            if (winningTeam != null && time >= f.Global->Rules.ScoresToWin) {
                 // <team> wins
                 GameLogicSystem.EndGame(f, false, winningTeam.Value);
                 return;
@@ -109,11 +109,12 @@ namespace Quantum
             return FPMath.Max(0, item.SpawnChance + bonus);
         }
 
-        public void SetPlayerAsPropeller(Frame f, EntityRef marioEntity) {
+        public void SetPlayerAsPropeller(Frame f, EntityRef marioEntity, bool wasRandom = false) {
             f.Unsafe.TryGetPointer(marioEntity, out MarioPlayer* mario);
             f.Global->PropellerPlayer = marioEntity;
             mario->PreviousPowerupState = mario->CurrentPowerupState;
             mario->CurrentPowerupState = PowerupState.PropellerMushroom;
+            f.Events.MarioPlayerChangedPropeller(f.Global->PropellerPlayer, wasRandom);
         }
 
         public void SelectRandomPlayer(Frame f, bool ignoreDead) {
@@ -140,13 +141,13 @@ namespace Quantum
             // pick a random player from the list
            if (validPlayers > 0) {
                 int rng = f.RNG->Next(0, validPlayers);
-                SetPlayerAsPropeller(f, marios[rng]);
+                SetPlayerAsPropeller(f, marios[rng], true);
            } else {
                 // reset player state
                 f.Unsafe.TryGetPointer(f.Global->PropellerPlayer, out MarioPlayer* mario);
                 mario->PreviousPowerupState = mario->CurrentPowerupState;
                 mario->CurrentPowerupState = PowerupState.PropellerMushroom;
-            }
+           }
         }
 
         public bool IsPlayerPropeller(Frame f, EntityRef entity) {
@@ -259,16 +260,17 @@ namespace Quantum
                     return spectatorColor;
                 }
 
-                MarioPlayer* checkingPlayer = null;
-                var marioFilter = f.Filter<MarioPlayer>();
-                while (marioFilter.NextUnsafe(out _, out MarioPlayer* mario)) {
-                    if (mario->PlayerRef == player) {
-                        checkingPlayer = mario;
-                        break;
+                var playerFilter = f.Filter<PlayerData>();
+                playerFilter.UseCulling = false;
+                f.Unsafe.TryGetPointer(f.Global->PropellerPlayer, out MarioPlayer* propMario);
+                if (propMario != null) {
+                    // now check player infos
+                    for (int i = 0; i < totalPlayers; i++) {
+                        var pRef = playerInfos[i].PlayerRef;
+                        if (pRef == player && pRef == propMario->PlayerRef) {
+                            return Color.cyan;
+                        }
                     }
-                }
-                if (IsPlayerPropeller(f, checkingPlayer)) {
-                    return Color.cyan;
                 }
                 return Color.red;
             }

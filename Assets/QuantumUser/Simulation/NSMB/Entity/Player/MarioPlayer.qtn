@@ -149,6 +149,10 @@ struct CoinRunnersData {
 	int ObjectiveCoins;
 }
 
+struct IceRunData {
+	FP PropellerTime;
+}
+
 union GamemodeSpecificData {
 	StarChasersData StarChasers;
 	CoinRunnersData CoinRunners;
@@ -297,6 +301,11 @@ event MarioPlayerLandedWithAnimation {
 
 event MarioPlayerIncrementPropellerScore {
 	EntityRef Entity;
+}
+
+event MarioPlayerChangedPropeller {
+	EntityRef Entity;
+	bool isRandom;
 }
 
 event PlayKnockbackEffect {

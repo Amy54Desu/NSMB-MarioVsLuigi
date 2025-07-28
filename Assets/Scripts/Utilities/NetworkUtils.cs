@@ -50,7 +50,7 @@ namespace NSMB.Utilities {
 
             // 31....26   25.....19   18...14   13...9   8...4   3..0
             // Level      Timer       Lives     Coins    Stars   Unused
-            public int /*Level,*/ Timer, Lives, CoinRequirement, StarRequirement;
+            public int /*Level,*/ ScoresToWin, Timer, Lives, CoinRequirement, StarRequirement;
 
             public static implicit operator int(IntegerProperties props) {
                 int value = 0;
@@ -68,6 +68,7 @@ namespace NSMB.Utilities {
             public static implicit operator IntegerProperties(int bits) {
                 IntegerProperties ret = new() {
                     //Level = (bits >> 26) & 0b111111,
+                    ScoresToWin = (bits & 24) & 0b111111,
                     Timer = (bits >> 19) & 0b1111111,
                     Lives = (bits >> 14) & 0b11111,
                     CoinRequirement = (bits >> 9) & 0b11111,

@@ -30,6 +30,7 @@ MonoBehaviour:
   LooseCoinPrototype:
     Id:
       Value: 1464681621458001613
+  DisableSpawningInvinciblity: 1
   DefaultRules:
     Stage:
       Id:
@@ -47,3 +48,4 @@ MonoBehaviour:
       Value: 1
     DrawOnTimeUp:
       Value: 0
+    ScoresToWin: 60

@@ -202,6 +202,7 @@ namespace Quantum {
             var icerun = f.FindAsset(f.Global->Rules.Gamemode) as IceRunGamemode;
             if (icerun != null && icerun.IsPlayerPropeller(f, entity)) {
                 icerun.SelectRandomPlayer(f, false);
+                icerun.SubtractOrAddScore(f, entity, -10);
             }
 
             if (f.Exists(HeldEntity) && f.Unsafe.TryGetPointer(HeldEntity, out Holdable* holdable)) {
@@ -229,6 +230,7 @@ namespace Quantum {
                 if (isIceRunner = icerun.IsPlayerPropeller(f, entity)) {
                     icerun.SubtractOrAddScore(f, entity, -5);
                 } else {
+                    DoKnockback(f, entity, FacingRight, 0, KnockbackStrength.CollisionBump, attacker);
                     return false;
                 }
             }
