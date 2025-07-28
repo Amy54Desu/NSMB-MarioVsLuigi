@@ -308,6 +308,11 @@ event MarioPlayerChangedPropeller {
 	bool isRandom;
 }
 
+event MarioPlayerSetPropellerTime {
+	PlayerRef Player;
+	FP amount;
+}
+
 event PlayKnockbackEffect {
 	EntityRef Entity;
 	EntityRef Attacker;

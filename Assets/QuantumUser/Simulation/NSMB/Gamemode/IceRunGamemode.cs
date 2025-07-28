@@ -1,5 +1,6 @@
 using Photon.Deterministic;
 using System;
+using System.Collections;
 using System.Drawing.Drawing2D;
 using UnityEngine;
 using UnityEngine.Diagnostics;
@@ -8,6 +9,9 @@ namespace Quantum
 {
     public unsafe class IceRunGamemode : GamemodeAsset
     {
+        public static readonly FP TimeMulti = 60;
+        private static readonly WaitForSeconds TimeChangeInterval = new(1f/60f);
+
         public override void EnableGamemode(Frame f) {
 
         }
@@ -172,11 +176,12 @@ namespace Quantum
         public FP SubtractOrAddScore(Frame f, MarioPlayer mario, FP num) {
             return _SubtractOrAddScore(f, &mario, num);
         }
-        
+
         private FP _SubtractOrAddScore(Frame f, MarioPlayer* marioPtr, FP num) {
             var icerun = marioPtr->GamemodeData.IceRun;
-            icerun->PropellerTime += num*60;
+            icerun->PropellerTime += num*TimeMulti;
 
+            f.Events.MarioPlayerSetPropellerTime(marioPtr->PlayerRef, num*TimeMulti);
             if (num < 0) {
                 return icerun->PropellerTime = FPMath.Max(icerun->PropellerTime, 0);
             } else {
