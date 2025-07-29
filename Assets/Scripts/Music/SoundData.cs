@@ -3,7 +3,7 @@ using UnityEngine.Serialization;
 
 namespace NSMB.Sound {
     [CreateAssetMenu(fileName = "SoundData", menuName = "ScriptableObjects/LoopingSound/SoundData")]
-    public class LoopingMidiSoundData : ScriptableObject {
+    public class LoopingSoundData : ScriptableObject {
 
         public AudioClip clip;
 
