@@ -70,7 +70,8 @@ namespace NSMB.Sound {
         }
 
         private bool AnyMusicPlaying() {
-            return midiMusicPlayerNormal.state == Songinator.PlaybackState.PLAYING ||
+            return midiMusicIceRunPlayer.state == Songinator.PlaybackState.PLAYING ||
+                   midiMusicPlayerNormal.state == Songinator.PlaybackState.PLAYING ||
                    midiMusicPlayerMega.state == Songinator.PlaybackState.PLAYING ||
                    midiMusicPlayerStarman.state == Songinator.PlaybackState.PLAYING;
         }
@@ -106,10 +107,10 @@ namespace NSMB.Sound {
         }
 
         private void CheckMidiSpeeds(bool speedup) {
-            /*midiMusicIceRunPlayer.speedup 
-            midiMusicPlayerNormal.SetHurrySpeed(speedup);
-            midiMusicPlayerMega.SetHurrySpeed(speedup);
-            midiMusicPlayerStarman.SetHurrySpeed(speedup);*/
+            midiMusicIceRunPlayer.speedup = speedup;
+            midiMusicPlayerNormal.speedup = speedup;
+            midiMusicPlayerMega.speedup = speedup;
+            midiMusicPlayerStarman.speedup = speedup;
         }
 
         public void HandleMusic(QuantumGame game, bool force) {
@@ -147,7 +148,17 @@ namespace NSMB.Sound {
                 if (!game.PlayerIsLocal(mario->PlayerRef) && !isSpectateTarget) {
                     continue;
                 }
-
+                var testGamemode = f.FindAsset(f.Global->Rules.Gamemode);
+                if (testGamemode is IceRunGamemode) {
+                    var icerun = testGamemode as IceRunGamemode;
+                    // mute main music
+                    SetMusicType(MusicType.Silence);
+                    if (!icerun.IsPlayerPropeller(f, mario)) {
+                        midiMusicIceRunPlayer.SetMutedChannels(1 | 2);
+                    } else {
+                        midiMusicIceRunPlayer.SetMutedChannels(midiMusicIceRunPlayer.CurrentSong.mutedChannelsNormal);
+                    }
+                }
                 speedup |= rules.IsLivesEnabled && mario->Lives == 1;
                 mega |= Settings.Instance.audioSpecialPowerupMusic.HasFlag(Enums.SpecialPowerupMusic.MegaMushroom) && mario->MegaMushroomFrames > 0;
                 invincible |= Settings.Instance.audioSpecialPowerupMusic.HasFlag(Enums.SpecialPowerupMusic.Starman) && mario->IsStarmanInvincible;
@@ -180,7 +191,8 @@ namespace NSMB.Sound {
                 if (usesMidi) SetMusicType(MusicType.Normal); else musicPlayer.Play(f.FindAsset(stage.GetCurrentMusic(f)));
             }
 
-            if (usesMidi) CheckMidiSpeeds(speedup); else musicPlayer.FastMusic = speedup;
+            if (!usesMidi) musicPlayer.FastMusic = speedup;
+            CheckMidiSpeeds(speedup);
         }
 
         private void OnGameEnded(EventGameEnded e) {

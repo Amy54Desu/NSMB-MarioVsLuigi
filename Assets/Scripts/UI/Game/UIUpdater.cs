@@ -306,11 +306,13 @@ namespace NSMB.UI.Game {
             if (objective != cachedObjective) {
                 cachedObjective = objective;
                 string objectiveString = gamemode.ObjectiveSymbolPrefix + "x" + cachedObjective;
-                if (gamemode is StarChasersGamemode or IceRunGamemode && !teamsEnabled) {
+                if (gamemode is StarChasersGamemode && !teamsEnabled) {
                     objectiveString += "/" + rules.StarsToWin;
+                } else if (gamemode is IceRunGamemode && !teamsEnabled) {
+                    objectiveString += "/" + rules.ScoresToWin;
                 }
 
-                uiMainObjective.text = Utils.GetSymbolString(objectiveString);
+                    uiMainObjective.text = Utils.GetSymbolString(objectiveString);
             }
 
             // COINS

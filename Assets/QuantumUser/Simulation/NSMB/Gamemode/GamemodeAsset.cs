@@ -25,8 +25,98 @@ namespace Quantum {
 
         public abstract int GetObjectiveCount(Frame f, MarioPlayer* mario);
 
-        public abstract Color GetPlayerColor(Frame f, PlayerRef player, float s = 1, float v = 1, bool considerDisqualifications = true);
-        public abstract Color GetTeamColor(Frame f, int team, float s = 1, float v = 1);
+        public virtual Color GetPlayerColor(Frame f, PlayerRef player, float s = 1, float v = 1, bool considerDisqualifications = true) {
+            var spectatorColor = GamemodeAsset.spectatorColor;
+            if (f == null || player == PlayerRef.None) {
+                return spectatorColor;
+            }
+
+            // Prioritize spectator status
+            if (!f.TryResolveDictionary(f.Global->PlayerDatas, out var playerDataDict)
+                || !playerDataDict.TryGetValue(player, out EntityRef playerDataEntity)
+                || !f.Unsafe.TryGetPointer(playerDataEntity, out PlayerData* playerData)
+                || playerData->IsSpectator) {
+
+                return spectatorColor;
+            }
+
+            // Or dead marios
+            if (f.Global->GameState > GameState.WaitingForPlayers && considerDisqualifications) {
+                var marioFilter = f.Filter<MarioPlayer>();
+                marioFilter.UseCulling = false;
+                MarioPlayer* existingMario = null;
+                while (marioFilter.NextUnsafe(out _, out MarioPlayer* mario)) {
+                    if (mario->PlayerRef == player) {
+                        existingMario = mario;
+                        break;
+                    }
+                }
+
+                if (existingMario == null
+                    || (f.Global->GameState >= GameState.Playing && f.Global->Rules.IsLivesEnabled && existingMario->Lives <= 0)) {
+                    return spectatorColor;
+                }
+            }
+
+            // Then team
+            if (f.Global->Rules.TeamsEnabled) {
+                return GetTeamColor(f, f.Global->GameState == GameState.PreGameRoom ? playerData->RequestedTeam : playerData->RealTeam, s, v);
+            }
+
+            // Then id based color
+            int ourIndex = 0;
+            int totalPlayers = 0;
+            if (f.Global->GameState == GameState.PreGameRoom) {
+                // use PlayerData here
+                PlayerData* ourPlayerData = QuantumUtils.GetPlayerData(f, player);
+
+                var playerFilter = f.Filter<PlayerData>();
+                playerFilter.UseCulling = false;
+                while (playerFilter.NextUnsafe(out _, out PlayerData* otherPlayerData)) {
+                    if (otherPlayerData->IsSpectator) {
+                        continue;
+                    }
+
+                    totalPlayers++;
+                    if (otherPlayerData->JoinTick < ourPlayerData->JoinTick) {
+                        ourIndex++;
+                    }
+                }
+            } else {
+                // use PlayerInformation here
+                ourIndex = -1;
+                totalPlayers = f.Global->RealPlayers;
+                var playerInfos = f.Global->PlayerInfo;
+                for (int i = 0; i < totalPlayers; i++) {
+                    if (playerInfos[i].PlayerRef == player) {
+                        ourIndex = i;
+                        break;
+                    }
+                }
+
+                if (ourIndex == -1) {
+                    // Spectator
+                    return spectatorColor;
+                }
+            }
+
+            return Color.HSVToRGB(ourIndex / (totalPlayers + 1f), s, v);
+        }
+
+        public virtual Color GetTeamColor(Frame f, int team, float s = 1, float v = 1) {
+            var spectatorColor = GamemodeAsset.spectatorColor;
+            var teams = f.SimulationConfig.Teams;
+            if (team < 0 || team >= teams.Length) {
+                return spectatorColor;
+            }
+
+            Color color = f.FindAsset(teams[team]).color;
+            Color.RGBToHSV(color, out float hue, out float saturation, out float value);
+            return Color.HSVToRGB(hue, saturation * s, value * v);
+        }
+
+        public virtual bool OverridePowerdownSystem(Frame f, EntityRef entity, EntityRef attacker) { return true; }
+        public virtual bool OverridePowerupSystem(Frame f, EntityRef powerupEntity, EntityRef marioEntity) { return true; }
         public static readonly Color spectatorColor = new(0.8f, 0.8f, 0.8f, 0.7f);
 
         public virtual CoinItemAsset GetRandomItem(Frame f, MarioPlayer* mario, bool fromBlock) {

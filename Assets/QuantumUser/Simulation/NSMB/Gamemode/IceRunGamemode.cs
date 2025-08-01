@@ -9,6 +9,12 @@ namespace Quantum
 {
     public unsafe class IceRunGamemode : GamemodeAsset
     {
+        public const int DeathPenalty = -10;
+        public const int DamagePenalty = -4;
+        public const int MiniInc = 1;
+        public const int MushroomInc = 3;
+        public const int FireFlowerInc = 5; // used for any powerup above the mushroom
+
         public static readonly FP TimeMulti = 60;
         private static readonly WaitForSeconds TimeChangeInterval = new(1f/60f);
 
@@ -185,7 +191,7 @@ namespace Quantum
             if (num < 0) {
                 return icerun->PropellerTime = FPMath.Max(icerun->PropellerTime, 0);
             } else {
-                return icerun->PropellerTime = FPMath.Min(icerun->PropellerTime, f.Global->Rules.StarsToWin);
+                return icerun->PropellerTime = FPMath.Min(icerun->PropellerTime / TimeMulti, f.Global->Rules.ScoresToWin) * TimeMulti;
             }
         }
 
@@ -291,6 +297,62 @@ namespace Quantum
             Color color = f.FindAsset(teams[team]).color;
             Color.RGBToHSV(color, out float hue, out float saturation, out float value);
             return Color.HSVToRGB(hue, saturation * s, value * v);
+        }
+
+        public override bool OverridePowerdownSystem(Frame f, EntityRef entity, EntityRef attacker) {
+            f.Unsafe.TryGetPointer(entity, out MarioPlayer* marioPtr);
+            bool isIceRunner = false;
+            if (isIceRunner = IsPlayerPropeller(f, entity)) {
+                SubtractOrAddScore(f, entity, DamagePenalty);
+            } else {
+                marioPtr->DoKnockback(f, entity, marioPtr->FacingRight, 0, KnockbackStrength.CollisionBump, attacker);
+                return false;
+            }
+
+            QBoolean doDamage = true;
+            f.Signals.OnMarioPlayerTakeDamage(entity, ref doDamage);
+            if (!doDamage) {
+                return false;
+            }
+
+            marioPtr->DamageInvincibilityFrames = 2 * 60;
+            f.Events.MarioPlayerTookDamage(entity);
+            return false;
+        }
+
+        public override bool OverridePowerupSystem(Frame f, EntityRef powerupEntity, EntityRef marioEntity) {
+            var powerup = f.Unsafe.GetPointer<Powerup>(powerupEntity);
+            if (powerup->IgnorePlayerFrames > 0) {
+                return false;
+            }
+
+            var coinItem = f.Unsafe.GetPointer<CoinItem>(powerupEntity);
+            var mario = f.Unsafe.GetPointer<MarioPlayer>(marioEntity);
+            var marioPhysicsObject = f.Unsafe.GetPointer<PhysicsObject>(marioEntity);
+            var newPowerup = (PowerupAsset) f.FindAsset(coinItem->Scriptable);
+
+            if (newPowerup.Type == PowerupType.Starman) {
+                mario->InvincibilityFrames = 200;
+                f.Signals.OnMarioPlayerBecameInvincible(marioEntity);
+            } else {
+                switch (newPowerup.State) {
+                case PowerupState.MiniMushroom:
+                    SubtractOrAddScore(f, marioEntity, MiniInc);
+                    break;
+                case PowerupState.Mushroom:
+                    SubtractOrAddScore(f, marioEntity, MushroomInc);
+                    break;
+                default:
+                    SubtractOrAddScore(f, marioEntity, FireFlowerInc);
+                    break;
+                }
+            }
+
+            f.Signals.OnMarioPlayerCollectedPowerup(marioEntity, powerupEntity);
+            f.Events.MarioPlayerCollectedPowerup(marioEntity, PowerupReserveResult.NoneButPlaySound, newPowerup);
+            f.Events.CollectableDespawned(powerupEntity, f.Unsafe.GetPointer<Transform2D>(powerupEntity)->Position, true);
+            f.Destroy(powerupEntity);
+            return false;
         }
     }
 }

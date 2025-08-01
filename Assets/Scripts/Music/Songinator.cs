@@ -48,6 +48,10 @@ public class Songinator : MonoBehaviour
         // CalculateCurrentSong();
     }
 
+    private void Update() {
+        Sequencer.Speed = speedup ? CurrentSong.playbackSpeedHurry : CurrentSong.playbackSpeedNormal;
+    }
+
     private void OnEnable() 
     {
         CalculateCurrentSong();
@@ -223,6 +227,11 @@ public class Songinator : MonoBehaviour
     public void SetOnMidiMessage(Synthesizer.OnMidiMessage func)
     {
         Synth.onMidiMessage += func;
+    }
+
+    public void SetMutedChannels(int mutedChannels) {
+        currentlyMutedChannels = mutedChannels;
+        Synth.SetChannelsMuted(mutedChannels);
     }
 
     public static MemoryStream Decompress(byte[] data) {

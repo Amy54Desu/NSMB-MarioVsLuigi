@@ -97,6 +97,11 @@ namespace Quantum {
                 return;
             }
 
+            var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
+            if (!gamemode.OverridePowerupSystem(f, powerupEntity, marioEntity)) {
+                return;
+            }
+
             var powerup = f.Unsafe.GetPointer<Powerup>(powerupEntity);
 
             // Don't collect if we're ignoring players (usually, after blue shell spawns from a blue koopa,

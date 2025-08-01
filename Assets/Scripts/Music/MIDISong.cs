@@ -53,10 +53,16 @@ public class MIDISong : ScriptableObject
     public float pitchDeltaNormal;
 
     [Tooltip(
-       "The relative pitch that will be added to the audio source that plays the song under normal circumstances. A value of 0.0 corresponds to the original pitch.")]
+       "The speed in hurry mode.")]
     [SerializeField]
     [Range(-2f, 2f)]
     public float playbackSpeedHurry = 1.5f;
+
+    [Tooltip(
+       "The relative pitch that will be added to the audio source in hurry mode.")]
+    [SerializeField]
+    [Range(-0.5f, 0.5f)]
+    public float playbackPitchHurry;
 
 #if UNITY_EDITOR
     private void OnValidate()

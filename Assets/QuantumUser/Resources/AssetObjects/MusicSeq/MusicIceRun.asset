@@ -14,12 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   song: {fileID: 5022602860645237092, guid: 8e6f8cc335638694cb9bf5266e44db72, type: 3}
   autoSoundfont: 1
-  soundfont: {fileID: 0}
+  soundfont: {fileID: 5022602860645237092, guid: bcf315a1532ae6c4bab94c3eb1a4e9f4,
+    type: 3}
   startTicks: 0
-  startLoopTicks: 0
+  startLoopTicks: 960
   endTicks: 0
   mutedChannelsNormal: 0
   mutedChannelsSpectating: 0
   bahChannel: -1
   playbackSpeedNormal: 1
   pitchDeltaNormal: 0
+  playbackSpeedHurry: 1.25
+  playbackPitchHurry: 0
