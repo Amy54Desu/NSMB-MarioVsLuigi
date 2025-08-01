@@ -21,6 +21,7 @@ global {
 	// custom
 	EntityRef PropellerPlayer;
 	EntityRef OldPropellerPlayer;
+	int PropellerSwaps;
 }
 
 struct PlayerInformation {

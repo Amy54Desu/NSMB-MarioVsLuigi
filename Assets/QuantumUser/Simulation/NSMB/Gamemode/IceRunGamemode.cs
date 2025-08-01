@@ -124,6 +124,10 @@ namespace Quantum
             f.Global->PropellerPlayer = marioEntity;
             mario->PreviousPowerupState = mario->CurrentPowerupState;
             mario->CurrentPowerupState = PowerupState.PropellerMushroom;
+            if (++f.Global->PropellerSwaps % (f.Global->RealPlayers * 2) == 0) {
+                var stage = f.FindAsset<VersusStageData>(f.Map.UserAsset);
+                stage.ResetStage(f, false);
+            }
             f.Events.MarioPlayerChangedPropeller(f.Global->PropellerPlayer, wasRandom);
         }
 
@@ -149,15 +153,15 @@ namespace Quantum
             }
 
             // pick a random player from the list
-           if (validPlayers > 0) {
+            if (validPlayers > 0) {
                 int rng = f.RNG->Next(0, validPlayers);
                 SetPlayerAsPropeller(f, marios[rng], true);
-           } else {
+            } else {
                 // reset player state
                 f.Unsafe.TryGetPointer(f.Global->PropellerPlayer, out MarioPlayer* mario);
                 mario->PreviousPowerupState = mario->CurrentPowerupState;
                 mario->CurrentPowerupState = PowerupState.PropellerMushroom;
-           }
+            }
         }
 
         public bool IsPlayerPropeller(Frame f, EntityRef entity) {

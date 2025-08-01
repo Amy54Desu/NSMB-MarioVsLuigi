@@ -1086,7 +1086,7 @@ namespace Quantum {
   }
   [StructLayout(LayoutKind.Explicit)]
   public unsafe partial struct _globals_ {
-    public const Int32 SIZE = 2904;
+    public const Int32 SIZE = 2912;
     public const Int32 ALIGNMENT = 8;
     [FieldOffset(0)]
     public AssetRef<Map> Map;
@@ -1115,19 +1115,19 @@ namespace Quantum {
     public BitSet10 PlayerLastConnectionState;
     [FieldOffset(1656)]
     public UInt16 BigStarSpawnTimer;
-    [FieldOffset(1704)]
+    [FieldOffset(1712)]
     public EntityRef MainBigStar;
-    [FieldOffset(1696)]
+    [FieldOffset(1704)]
     public BitSet64 UsedStarSpawns;
-    [FieldOffset(1672)]
+    [FieldOffset(1676)]
     public Int32 UsedStarSpawnCount;
-    [FieldOffset(1736)]
+    [FieldOffset(1744)]
     public GameRules Rules;
     [FieldOffset(1650)]
     public GameState GameState;
-    [FieldOffset(1664)]
-    public Int32 StartFrame;
     [FieldOffset(1668)]
+    public Int32 StartFrame;
+    [FieldOffset(1672)]
     public Int32 TotalGamesPlayed;
     [FieldOffset(1658)]
     public UInt16 GameStartFrames;
@@ -1137,30 +1137,32 @@ namespace Quantum {
     public UInt16 AutomaticStageRefreshInterval;
     [FieldOffset(1654)]
     public UInt16 AutomaticStageRefreshTimer;
-    [FieldOffset(1784)]
+    [FieldOffset(1792)]
     [FramePrinter.FixedArrayAttribute(typeof(PlayerInformation), 10)]
     private fixed Byte _PlayerInfo_[1120];
     [FieldOffset(1648)]
     public Byte RealPlayers;
     [FieldOffset(1649)]
     public Byte TotalMarios;
-    [FieldOffset(1676)]
-    public Int32 WinningTeam;
-    [FieldOffset(1684)]
-    public QBoolean HasWinner;
-    [FieldOffset(1720)]
-    public EntityRef PropellerPlayer;
-    [FieldOffset(1712)]
-    public EntityRef OldPropellerPlayer;
     [FieldOffset(1680)]
-    public PlayerRef Host;
+    public Int32 WinningTeam;
     [FieldOffset(1688)]
-    [AllocateOnComponentAdded()]
-    public QDictionaryPtr<PlayerRef, EntityRef> PlayerDatas;
+    public QBoolean HasWinner;
+    [FieldOffset(1728)]
+    public EntityRef PropellerPlayer;
+    [FieldOffset(1720)]
+    public EntityRef OldPropellerPlayer;
+    [FieldOffset(1664)]
+    public Int32 PropellerSwaps;
+    [FieldOffset(1684)]
+    public PlayerRef Host;
     [FieldOffset(1692)]
     [AllocateOnComponentAdded()]
+    public QDictionaryPtr<PlayerRef, EntityRef> PlayerDatas;
+    [FieldOffset(1696)]
+    [AllocateOnComponentAdded()]
     public QListPtr<BannedPlayerInfo> BannedPlayerIds;
-    [FieldOffset(1728)]
+    [FieldOffset(1736)]
     public FP Timer;
     public FixedArray<Input> input {
       get {
@@ -1206,6 +1208,7 @@ namespace Quantum {
         hash = hash * 31 + HasWinner.GetHashCode();
         hash = hash * 31 + PropellerPlayer.GetHashCode();
         hash = hash * 31 + OldPropellerPlayer.GetHashCode();
+        hash = hash * 31 + PropellerSwaps.GetHashCode();
         hash = hash * 31 + Host.GetHashCode();
         hash = hash * 31 + PlayerDatas.GetHashCode();
         hash = hash * 31 + BannedPlayerIds.GetHashCode();
@@ -1243,6 +1246,7 @@ namespace Quantum {
         serializer.Stream.Serialize(&p->BigStarSpawnTimer);
         serializer.Stream.Serialize(&p->GameStartFrames);
         serializer.Stream.Serialize(&p->PlayerLoadFrames);
+        serializer.Stream.Serialize(&p->PropellerSwaps);
         serializer.Stream.Serialize(&p->StartFrame);
         serializer.Stream.Serialize(&p->TotalGamesPlayed);
         serializer.Stream.Serialize(&p->UsedStarSpawnCount);
