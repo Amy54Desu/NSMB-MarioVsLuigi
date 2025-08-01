@@ -24,6 +24,7 @@ public class Songinator : MonoBehaviour
     private const float OriginalPitch = 1.0f;
 
     [SerializeField] public bool autoStart = true;
+    [SerializeField] public bool speedup = false;
     [SerializeField] public List<MIDISong> songs;
     [SerializeField] public List<int> chances;
     [SerializeField] public PlaybackState state = PlaybackState.STOPPED;
@@ -106,7 +107,7 @@ public class Songinator : MonoBehaviour
         _currentMidiFile = new MidiFile(new MemoryStream(CurrentSong.song.Bytes));
 
         // Assign to the synth and sequencer the song properties.
-        Sequencer.Speed = CurrentSong.playbackSpeedNormal;
+        Sequencer.Speed = speedup ? CurrentSong.playbackSpeedHurry : CurrentSong.playbackSpeedNormal;
         Sequencer.StartLoopTicks = CurrentSong.startLoopTicks;
         Sequencer.EndLoopTicks = CurrentSong.endTicks;
         Source.pitch = OriginalPitch + CurrentSong.pitchDeltaNormal;
@@ -222,10 +223,6 @@ public class Songinator : MonoBehaviour
     public void SetOnMidiMessage(Synthesizer.OnMidiMessage func)
     {
         Synth.onMidiMessage += func;
-    }
-
-    public void SetHurrySpeed(bool speedup) {
-        Sequencer.Speed = speedup ? CurrentSong.playbackSpeedHurry : CurrentSong.playbackSpeedNormal;
     }
 
     public static MemoryStream Decompress(byte[] data) {

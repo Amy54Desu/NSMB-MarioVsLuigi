@@ -105,8 +105,11 @@ namespace NSMB.Sound {
             currentMusicType = type;
         }
 
-        private void CheckMidiSpeeds() {
-
+        private void CheckMidiSpeeds(bool speedup) {
+            /*midiMusicIceRunPlayer.speedup 
+            midiMusicPlayerNormal.SetHurrySpeed(speedup);
+            midiMusicPlayerMega.SetHurrySpeed(speedup);
+            midiMusicPlayerStarman.SetHurrySpeed(speedup);*/
         }
 
         public void HandleMusic(QuantumGame game, bool force) {
@@ -182,6 +185,7 @@ namespace NSMB.Sound {
 
         private void OnGameEnded(EventGameEnded e) {
             musicPlayer.Stop();
+            midiMusicIceRunPlayer.SetPlaybackState(Songinator.PlaybackState.STOPPED);
             midiMusicPlayerNormal.SetPlaybackState(Songinator.PlaybackState.STOPPED);
             midiMusicPlayerMega.SetPlaybackState(Songinator.PlaybackState.STOPPED);
             midiMusicPlayerStarman.SetPlaybackState(Songinator.PlaybackState.STOPPED);
