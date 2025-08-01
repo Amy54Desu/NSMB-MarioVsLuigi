@@ -105,6 +105,10 @@ namespace NSMB.Sound {
             currentMusicType = type;
         }
 
+        private void CheckMidiSpeeds() {
+
+        }
+
         public void HandleMusic(QuantumGame game, bool force) {
             Frame f = game.Frames.Predicted;
             var rules = f.Global->Rules;
@@ -173,11 +177,14 @@ namespace NSMB.Sound {
                 if (usesMidi) SetMusicType(MusicType.Normal); else musicPlayer.Play(f.FindAsset(stage.GetCurrentMusic(f)));
             }
 
-            if (usesMidi) musicPlayer.FastMusic = speedup;
+            if (usesMidi) CheckMidiSpeeds(speedup); else musicPlayer.FastMusic = speedup;
         }
 
         private void OnGameEnded(EventGameEnded e) {
             musicPlayer.Stop();
+            midiMusicPlayerNormal.SetPlaybackState(Songinator.PlaybackState.STOPPED);
+            midiMusicPlayerMega.SetPlaybackState(Songinator.PlaybackState.STOPPED);
+            midiMusicPlayerStarman.SetPlaybackState(Songinator.PlaybackState.STOPPED);
         }
 
         private void OnMarioPlayerRespawned(EventMarioPlayerRespawned e) {

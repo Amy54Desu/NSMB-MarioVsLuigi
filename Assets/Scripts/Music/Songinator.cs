@@ -21,7 +21,7 @@ public class Songinator : MonoBehaviour
         PLAYING = 1
     }
 
-    private const float OriginalPitch = 0.985f;
+    private const float OriginalPitch = 1.0f;
 
     [SerializeField] public bool autoStart = true;
     [SerializeField] public List<MIDISong> songs;
@@ -222,6 +222,10 @@ public class Songinator : MonoBehaviour
     public void SetOnMidiMessage(Synthesizer.OnMidiMessage func)
     {
         Synth.onMidiMessage += func;
+    }
+
+    public void SetHurrySpeed(bool speedup) {
+        Sequencer.Speed = speedup ? CurrentSong.playbackSpeedHurry : CurrentSong.playbackSpeedNormal;
     }
 
     public static MemoryStream Decompress(byte[] data) {
