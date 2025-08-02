@@ -217,7 +217,7 @@ namespace NSMB.UI.Game {
             teamsParent.SetActive(marioExists && f.Global->Rules.TeamsEnabled);
             starsParent.SetActive(marioExists);
             livesParent.SetActive(marioExists && f.Global->Rules.IsLivesEnabled);
-            coinsParent.SetActive(marioExists);
+            coinsParent.SetActive(marioExists && f.Global->Rules.IsCoinsEnabled);
             timerParent.SetActive(f.Global->Rules.IsTimerEnabled);
             reserveItemBox.SetActive(marioExists);
         }
@@ -268,6 +268,7 @@ namespace NSMB.UI.Game {
             bool teamsEnabled = rules.TeamsEnabled;
             bool livesEnabled = rules.IsLivesEnabled;
             bool timerEnabled = rules.TimerMinutes > 0;
+            bool coinsEnabled = rules.IsCoinsEnabled;
 
             // TIMER
             if (timerEnabled) {
@@ -312,13 +313,15 @@ namespace NSMB.UI.Game {
                     objectiveString += "/" + rules.ScoresToWin;
                 }
 
-                    uiMainObjective.text = Utils.GetSymbolString(objectiveString);
+                uiMainObjective.text = Utils.GetSymbolString(objectiveString);
             }
 
             // COINS
-            if (mario->Coins != cachedCoins) {
-                cachedCoins = mario->Coins;
-                uiCoins.text = Utils.GetSymbolString("Cx" + cachedCoins + "/" + coinRequirement);
+            if (coinsEnabled) {
+                if (mario->Coins != cachedCoins) {
+                    cachedCoins = mario->Coins;
+                    uiCoins.text = Utils.GetSymbolString("Cx" + cachedCoins + "/" + coinRequirement);
+                }
             }
 
             // LIVES

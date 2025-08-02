@@ -1998,6 +1998,11 @@ namespace Quantum {
                 return;
             }
 
+            var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
+            if (!gamemode.OnProjectileMarioInteraction(f, marioEntity, projectileEntity)) {
+                return;
+            }
+
             var mario = f.Unsafe.GetPointer<MarioPlayer>(marioEntity);
             var projectileAsset = f.FindAsset(projectile->Asset);
             bool dropStars = true;
@@ -2027,13 +2032,6 @@ namespace Quantum {
                         mario->Death(f, marioEntity, false, true, projectileEntity);
                     } else if (dropStars) {
                         IceBlockSystem.Freeze(f, marioEntity);
-                        var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
-                        if (gamemode is IceRunGamemode) {
-                            var icerun = gamemode as IceRunGamemode;
-                            icerun.SetPlayerAsPropeller(f, projectile->Owner);
-                            mario->PreviousPowerupState = mario->CurrentPowerupState;
-                            mario->CurrentPowerupState = PowerupState.IceFlower;
-                        }
                     } else {
                         didKnockback = mario->DoKnockback(f, marioEntity, !projectile->FacingRight, dropStars ? 1 : 0, KnockbackStrength.FireballBump, projectileEntity);
                     }

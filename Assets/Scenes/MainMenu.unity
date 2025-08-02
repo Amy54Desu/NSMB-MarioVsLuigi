@@ -65350,10 +65350,10 @@ MonoBehaviour:
   leftArrow: {fileID: 2001470805}
   rightArrow: {fileID: 785706484}
   cursorSfx: {fileID: 252585806}
-  minValue: 1
+  minValue: 0
   maxValue: 60
   step: 1
-  minimumValueIsOff: 0
+  minimumValueIsOff: 1
 --- !u!114 &1316906176
 MonoBehaviour:
   m_ObjectHideFlags: 0

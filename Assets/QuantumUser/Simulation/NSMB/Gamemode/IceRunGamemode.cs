@@ -55,15 +55,16 @@ namespace Quantum
 
             // End Condition: team has had propeller for that long
             int? winningTeam = GetWinningTeam(f, out int time);
-            if (winningTeam != null && time >= f.Global->Rules.ScoresToWin) {
+            var rules = f.Global->Rules;
+            if (winningTeam != null && time >= rules.ScoresToWin && rules.IsScoresEnabled) {
                 // <team> wins
                 GameLogicSystem.EndGame(f, false, winningTeam.Value);
                 return;
             }
 
             // End Condition: timer expires
-            if (f.Global->Rules.IsTimerEnabled && f.Global->Timer <= 0) {
-                if (f.Global->Rules.DrawOnTimeUp) {
+            if (rules.IsTimerEnabled && f.Global->Timer <= 0) {
+                if (rules.DrawOnTimeUp) {
                     // It's a draw
                     GameLogicSystem.EndGame(f, false, null);
                     return;
@@ -110,7 +111,7 @@ namespace Quantum
             int timeDiff = leaderTime - ourTime;
             FP bonus = 0;
             while (allPlayers.NextUnsafe(out _, out MarioPlayer* mario)) {
-                if (mario->CurrentPowerupState == PowerupState.PropellerMushroom) {
+                if (IsPlayerPropeller(f, mario)) {
                     bonus = 0;
                 } else {
                     bonus = item.LosingSpawnBonus * FPMath.Log(timeDiff + 1, FP.E) * (FP._1 - ((FP) (timeToWin - leaderTime) / timeToWin));
@@ -195,7 +196,9 @@ namespace Quantum
             if (num < 0) {
                 return icerun->PropellerTime = FPMath.Max(icerun->PropellerTime, 0);
             } else {
-                return icerun->PropellerTime = FPMath.Min(icerun->PropellerTime / TimeMulti, f.Global->Rules.ScoresToWin) * TimeMulti;
+                if (IsPlayerPropeller(f, marioPtr)) return icerun->PropellerTime = FPMath.Min(icerun->PropellerTime / TimeMulti, f.Global->Rules.ScoresToWin) * TimeMulti;
+                // don't let them win when not propeller!
+                else return icerun->PropellerTime = FPMath.Min(icerun->PropellerTime, f.Global->Rules.ScoresToWin * TimeMulti - 1);
             }
         }
 
@@ -357,6 +360,30 @@ namespace Quantum
             f.Events.CollectableDespawned(powerupEntity, f.Unsafe.GetPointer<Transform2D>(powerupEntity)->Position, true);
             f.Destroy(powerupEntity);
             return false;
+        }
+
+        public override bool OnProjectileMarioInteraction(Frame f, EntityRef marioEntity, EntityRef projectileEntity) {
+            var projectile = f.Unsafe.GetPointer<Projectile>(projectileEntity);
+            var projectileAsset = f.FindAsset(projectile->Asset);
+
+            f.Unsafe.TryGetPointer(marioEntity, out MarioPlayer* mario);
+            bool dropStars = true;
+
+            if (f.Unsafe.TryGetPointer(projectile->Owner, out MarioPlayer* ownerMario)) {
+                dropStars = ownerMario->GetTeam(f) != mario->GetTeam(f);
+            }
+
+            bool damageable = !mario->IsInKnockback
+                && mario->CurrentPowerupState != PowerupState.MegaMushroom
+                && mario->IsDamageable
+                && !((mario->IsCrouchedInShell || mario->IsInShell) && projectileAsset.DoesntEffectBlueShell);
+
+            if (damageable && dropStars && projectileAsset.Effect == ProjectileEffectType.Freeze && IsPlayerPropeller(f, mario)) {
+                SetPlayerAsPropeller(f, projectile->Owner);
+                mario->PreviousPowerupState = mario->CurrentPowerupState;
+                mario->CurrentPowerupState = PowerupState.IceFlower;
+            }
+            return true;
         }
     }
 }

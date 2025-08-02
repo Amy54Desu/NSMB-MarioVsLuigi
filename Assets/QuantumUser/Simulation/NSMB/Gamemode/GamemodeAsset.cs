@@ -117,6 +117,7 @@ namespace Quantum {
 
         public virtual bool OverridePowerdownSystem(Frame f, EntityRef entity, EntityRef attacker) { return true; }
         public virtual bool OverridePowerupSystem(Frame f, EntityRef powerupEntity, EntityRef marioEntity) { return true; }
+        public virtual bool OnProjectileMarioInteraction(Frame f, EntityRef marioEntity, EntityRef projectileEntity) { return true; }
         public static readonly Color spectatorColor = new(0.8f, 0.8f, 0.8f, 0.7f);
 
         public virtual CoinItemAsset GetRandomItem(Frame f, MarioPlayer* mario, bool fromBlock) {
