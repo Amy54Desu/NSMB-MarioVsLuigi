@@ -309,7 +309,7 @@ namespace NSMB.UI.Game {
                 string objectiveString = gamemode.ObjectiveSymbolPrefix + "x" + cachedObjective;
                 if (gamemode is StarChasersGamemode && !teamsEnabled) {
                     objectiveString += "/" + rules.StarsToWin;
-                } else if (gamemode is IceRunGamemode && !teamsEnabled) {
+                } else if (gamemode is IceRunGamemode && !teamsEnabled && rules.IsScoresEnabled) {
                     objectiveString += "/" + rules.ScoresToWin;
                 }
 
