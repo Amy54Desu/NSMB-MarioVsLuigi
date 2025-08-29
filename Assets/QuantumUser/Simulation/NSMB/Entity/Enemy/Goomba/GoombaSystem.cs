@@ -70,30 +70,27 @@ namespace Quantum {
             FPVector2 damageDirection = (theirPos - ourPos).Normalized;
             bool attackedFromAbove = FPVector2.Dot(damageDirection, FPVector2.Up) > FP._0_25;
 
-            bool groundpounded = attackedFromAbove && mario->IsGroundpoundActive && mario->CurrentPowerupState != PowerupState.MiniMushroom;
-            if (mario->InstakillsEnemies(marioPhysicsObject, true) || groundpounded) {
-                goomba->Kill(f, goombaEntity, marioEntity, groundpounded ? KillReason.Groundpounded : KillReason.Special);
-                mario->DoEntityBounce |= mario->IsDrilling;
+            if (mario->InstakillsEnemies(marioPhysicsObject, true)) {
+                goomba->Kill(f, goombaEntity, marioEntity, KillReason.Special);
                 return;
             }
 
             if (attackedFromAbove) {
-                if (mario->CurrentPowerupState == PowerupState.MiniMushroom) {
-                    if (mario->IsGroundpounding) {
-                        mario->IsGroundpounding = false;
-                        goomba->Kill(f, goombaEntity, marioEntity, KillReason.Normal);
-                    }
-                    mario->DoEntityBounce = true;
-                } else {
+                switch (mario->StompPowerLevel) {
+                case StompLevel.NoDamage:
+                    break;
+                case StompLevel.Normal:
                     goomba->Kill(f, goombaEntity, marioEntity, KillReason.Normal);
-                    mario->DoEntityBounce = !mario->IsGroundpounding;
+                    break;
+                case StompLevel.Strong:
+                    goomba->Kill(f, goombaEntity, marioEntity, KillReason.Groundpounded);
+                    break;
                 }
-
-                mario->IsDrilling = false;
-
+                mario->CheckEntityBounce(f);
             } else if (mario->IsCrouchedInShell) {
                 mario->FacingRight = damageDirection.X < 0;
                 marioPhysicsObject->Velocity.X = 0;
+                goombaEnemy->ChangeFacingRight(f, goombaEntity, damageDirection.X > 0);
 
             } else if (mario->IsDamageable) {
                 mario->Powerdown(f, marioEntity, false, goombaEntity);

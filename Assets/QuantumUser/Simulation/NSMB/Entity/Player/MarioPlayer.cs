@@ -2,6 +2,7 @@ using Photon.Deterministic;
 using Quantum.Collections;
 using Quantum.Core;
 using System;
+using System.Collections.Generic;
 
 namespace Quantum {
     public unsafe partial struct MarioPlayer {
@@ -15,30 +16,6 @@ namespace Quantum {
         public readonly bool CanCollectOwnTeamsObjectiveCoins => !IsInKnockback && DamageInvincibilityFrames == 0;
         public const int DropStarRight = 1 << 8;
         public const int NoStarLoss = -1;
-
-        public enum ActionFlags {
-            Intangible = 1 << 0,             // makes Mario intangible if added
-            IsShelled = 1 << 1,              // Blue Shell action
-            Attacking = 1 << 2,              // hurts enemies
-            NoPlayerBounce = 1 << 3,         // disable bounce off players
-            NoEnemyBounce = 1 << 4,         // disable bounce off enemies
-            AirAction = 1 << 5,             // if the action is in the air
-            WaterAction = 1 << 6,           // if the action is in the water
-            AllowBump = 1 << 7,            // allows bumping into other players
-            AllowHold = 1 << 8,            // allows Mario to pick up items
-            Cutscene = 1 << 9,             // cutscene-like properties
-            CameraChange = 1 << 10,        // changes the way the camera moves (i.e Propeller Spin)
-            DisableTurnaround = 1 << 11,   // disables turn around by left and right
-            DisablePushing = 1 << 12,      // disables pushing
-            UsesSmallHitbox = 1 << 13,     // use the small hitbox even if Mario's big
-            UsesCrouchHitbox = 1 << 14,   // use the crouch hitbox
-            KillMiniStomp = 1 << 15,      // kills Mini players if above
-            StarSpinAction = 1 << 16,     // makes Mario do the star sommersault
-            IrregularVelocity = 1 << 17, // velocity isn't controlled by the regular left and right inputs
-            Holding = 1 << 18,           // Mario is holding something in the action
-            OverrideAll = 1 << 19,       // skip every method only letting the HandleActions method run
-            IgnoreWater = 1 << 20,      // do not set Mario's action to Swimming
-        }
 
         public readonly byte? GetTeam(Frame f) {
             var data = QuantumUtils.GetPlayerData(f, PlayerRef);
@@ -57,7 +34,7 @@ namespace Quantum {
             }
         }
 
-        public static ActionFlags GetActionFlags(PlayerAction action) {
+        public static ActionFlags DefaultActionFlags(PlayerAction action) {
             return action switch {
                 PlayerAction.Idle => ActionFlags.AllowBump,
                 PlayerAction.Walk => ActionFlags.AllowBump | ActionFlags.AllowHold,
@@ -122,7 +99,7 @@ namespace Quantum {
             }
         }
 
-        public PlayerAction SetPlayerAction(PlayerAction playerAction, Frame f, int arg = 0, bool throwItem = false, bool dropItem = false, bool discardItem = false) {
+        public PlayerAction SetPlayerAction(Frame f, PlayerAction playerAction, int arg = 0, bool throwItem = false, bool dropItem = false, bool discardItem = false, QListPtr<EntityRef> entityRefs = default) {
             PrevAction = Action;
             PreActionInput = default;
             if (PlayerRef.IsValid && f.GetPlayerInput(PlayerRef) != null) {
@@ -142,32 +119,36 @@ namespace Quantum {
             ActionTimer = 0;
             ActionState = 0;
             ActionArg = arg;
+            ActionEntities = entityRefs;
 
             ClearStompEvents();
             SetStompLevel();
-            SetActionFlags(GetActionFlags(Action));
+            SetActionFlags(DefaultActionFlags(playerAction));
 
             BreakableLevel = CurrentPowerupState;
+            int breakableFlags = 0;
             if (HasActionFlags(ActionFlags.AirAction)) {
                 // assume they can break ceilings
-                SetBreakableFlags(BreakableFlags.Up);
-            } else {
-                CurrBreakableFlags = 0;
+                breakableFlags |= (int)BreakableFlags.Up;
             }
+            if (HasActionFlags(ActionFlags.IsShelled)) {
+                breakableFlags |= (int)(BreakableFlags.Left | BreakableFlags.Right);
+            }
+            CurrBreakableFlags = breakableFlags;
 
             UnityEngine.Debug.Log($"[Player] Set action to [{Enum.GetName(typeof(PlayerAction), playerAction)}] with Arg [{arg}]");
             return Action;
         }
 
-        public bool SetPlayerActionOnce(PlayerAction playerAction, Frame f, int arg = 0) {
+        public bool SetPlayerActionOnce(Frame f, PlayerAction playerAction, int arg = 0) {
             if (Action == playerAction) {
                 return false;
             }
-            SetPlayerAction(playerAction, f, arg);
+            SetPlayerAction(f, playerAction, arg);
             return true;
         }
 
-        public PlayerAction? SetGroundAction(PhysicsObject* physicsObject, Frame f, PlayerAction? groundAction = null, int actionArg = 0) {
+        public PlayerAction? SetGroundAction(Frame f, PhysicsObject* physicsObject, PlayerAction? groundAction = null, int actionArg = 0) {
             if (physicsObject->IsTouchingGround) {
                 PlayerAction targetAction;
                 if (groundAction == null) {
@@ -179,12 +160,12 @@ namespace Quantum {
                 } else {
                     targetAction = groundAction.GetValueOrDefault();
                 }
-                return SetPlayerAction(targetAction, f, actionArg);
+                return SetPlayerAction(f, targetAction, actionArg);
             }
             return null;
         }
 
-        public PlayerAction? SetAirAction(PhysicsObject* physicsObject, Frame f, PlayerAction? airAction = null, int actionArg = 0, bool ignCoyote = false) {
+        public PlayerAction? SetAirAction(Frame f, PhysicsObject* physicsObject, PlayerAction? airAction = null, int actionArg = 0, bool ignCoyote = false) {
             if (ignCoyote) {
                 CoyoteTimeFrames = 0;
             }
@@ -200,12 +181,12 @@ namespace Quantum {
                 } else {
                     targetAction = airAction.GetValueOrDefault();
                 }
-                return SetPlayerAction(targetAction, f, actionArg);
+                return SetPlayerAction(f, targetAction, actionArg);
             }
             return null;
         }
 
-        public PlayerAction? SetWaterAction(PhysicsObject* physicsObject, Frame f, PlayerAction? waterAction = null, int actionArg = 0) {
+        public PlayerAction? SetWaterAction(Frame f, PhysicsObject* physicsObject, PlayerAction? waterAction = null, int actionArg = 0) {
             if (physicsObject->IsUnderwater) {
                 PlayerAction targetAction;
                 if (waterAction == null) {
@@ -217,7 +198,7 @@ namespace Quantum {
                 } else {
                     targetAction = waterAction.GetValueOrDefault();
                 }
-                return SetPlayerAction(targetAction, f, actionArg);
+                return SetPlayerAction(f, targetAction, actionArg);
             }
             return null;
         }
@@ -301,8 +282,8 @@ namespace Quantum {
                 }
             }
             StompLevel oldStompLevel = StompPowerLevel;
-            SetPlayerAction(PlayerAction.Bounce, f);
-            SetStompLevel(oldStompLevel);
+            SetPlayerAction(f, PlayerAction.Bounce);
+            //SetStompLevel(oldStompLevel);
             return true;
         }
 
@@ -372,7 +353,7 @@ namespace Quantum {
         public readonly bool InstakillsEnemies(PhysicsObject* physicsObject, bool includeSliding) {
             return CurrentPowerupState == PowerupState.MegaMushroom
                 || IsStarmanInvincible
-                || HasActionFlags(ActionFlags.Attacking);
+                || HasActionFlags(ActionFlags.Attacking) && (includeSliding || Action != PlayerAction.Sliding);
         }
 
         public readonly int GetSpeedStage(PhysicsObject* physicsObject, MarioPlayerPhysicsInfo physicsInfo) {
@@ -680,7 +661,7 @@ namespace Quantum {
             }
         }
 
-        public bool DoKnockback(Frame f, EntityRef entity, bool fromRight, int starsToDrop, KnockbackStrength strength, EntityRef attacker, bool bypassDamageInvincibility = false) {
+        public bool SetKnockbackAction(Frame f, EntityRef entity, bool fromRight, int starsToDrop, KnockbackStrength strength, EntityRef attacker, bool bypassDamageInvincibility = false) {
             var physicsObject = f.Unsafe.GetPointer<PhysicsObject>(entity);
             if (physicsObject->IsUnderwater) {
                 strength = KnockbackStrength.Normal;
@@ -757,15 +738,6 @@ namespace Quantum {
 
             KnockbackWasOriginallyFacingRight = FacingRight;
             KnockForwards = FacingRight != fromRight;
-            IsInShell = false;
-            IsGroundpounding = false;
-            IsSpinnerFlying = false;
-            IsPropellerFlying = false;
-            PropellerLaunchFrames = 0;
-            PropellerSpinFrames = 0;
-            IsSliding = false;
-            IsDrilling = false;
-            WallslideLeft = WallslideRight = false;
             
             f.Signals.OnMarioPlayerDropObjective(entity, starsToDrop, attacker);
             return true;

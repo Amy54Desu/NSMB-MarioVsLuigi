@@ -229,7 +229,6 @@ namespace Quantum {
                 return;
             }
 
-            bool groundpounded = attackedFromAbove && mario->IsGroundpoundActive && mario->CurrentPowerupState != PowerupState.MiniMushroom;
             if (isSpiny) {
                 // Do damage
                 if (mario->IsCrouchedInShell) {
@@ -245,7 +244,7 @@ namespace Quantum {
                 return;
             }
             
-            if (groundpounded) {
+            if (attackedFromAbove && mario->StompPowerLevel >= StompLevel.Strong) {
                 if (koopa->SpawnPowerupWhenStomped.IsValid
                     && f.TryFindAsset(koopa->SpawnPowerupWhenStomped, out PowerupAsset powerup)) {
                     // Powerup (for blue koopa): give to mario immediately
@@ -286,10 +285,10 @@ namespace Quantum {
                         koopaEnemy->IsDead = true;
                         koopaPhysicsObject->IsFrozen = true;
 
-                    } else if (mario->CurrentPowerupState != PowerupState.MiniMushroom || mario->IsGroundpoundActive) {
+                    } else if (mario->StompPowerLevel > StompLevel.NoDamage) {
                         koopa->EnterShell(f, koopaEntity, marioEntity, false, false);
                     }
-                    mario->DoEntityBounce = true;
+                    mario->CheckEntityBounce(f);
                     koopaHoldable->PreviousHolder = marioEntity;
                     koopaHoldable->IgnoreOwnerFrames = 5;
                 } else {

@@ -49,12 +49,6 @@ namespace Quantum {
   using RuntimeInitializeOnLoadMethodAttribute = UnityEngine.RuntimeInitializeOnLoadMethodAttribute;
   #endif //;
   
-  public enum BreakableFlags : byte {
-    Down = 1,
-    Up = 2,
-    Left = 4,
-    Right = 8,
-  }
   [System.Flags()]
   public enum CoinType : byte {
     BakedInStage = 1,
@@ -163,6 +157,37 @@ namespace Quantum {
     Strong,
   }
   [System.FlagsAttribute()]
+  public enum ActionFlags : int {
+    Intangible = 1 << 0,
+    IsShelled = 1 << 1,
+    Attacking = 1 << 2,
+    NoPlayerBounce = 1 << 3,
+    NoEnemyBounce = 1 << 4,
+    AirAction = 1 << 5,
+    WaterAction = 1 << 6,
+    AllowBump = 1 << 7,
+    AllowHold = 1 << 8,
+    Cutscene = 1 << 9,
+    CameraChange = 1 << 10,
+    DisableTurnaround = 1 << 11,
+    DisablePushing = 1 << 12,
+    UsesSmallHitbox = 1 << 13,
+    UsesCrouchHitbox = 1 << 14,
+    KillMiniStomp = 1 << 15,
+    StarSpinAction = 1 << 16,
+    IrregularVelocity = 1 << 17,
+    Holding = 1 << 18,
+    OverrideAll = 1 << 19,
+    IgnoreWater = 1 << 20,
+  }
+  [System.FlagsAttribute()]
+  public enum BreakableFlags : byte {
+    Down = 1 << 0,
+    Up = 1 << 1,
+    Left = 1 << 2,
+    Right = 1 << 3,
+  }
+  [System.FlagsAttribute()]
   public enum InputButtons : int {
     Up = 1 << 0,
     Down = 1 << 1,
@@ -175,6 +200,24 @@ namespace Quantum {
     PropellerPowerupAction = 1 << 8,
   }
   public static unsafe partial class FlagsExtensions {
+    public static Boolean IsFlagSet(this ActionFlags self, ActionFlags flag) {
+      return (self & flag) == flag;
+    }
+    public static ActionFlags SetFlag(this ActionFlags self, ActionFlags flag) {
+      return self | flag;
+    }
+    public static ActionFlags ClearFlag(this ActionFlags self, ActionFlags flag) {
+      return self & ~flag;
+    }
+    public static Boolean IsFlagSet(this BreakableFlags self, BreakableFlags flag) {
+      return (self & flag) == flag;
+    }
+    public static BreakableFlags SetFlag(this BreakableFlags self, BreakableFlags flag) {
+      return self | flag;
+    }
+    public static BreakableFlags ClearFlag(this BreakableFlags self, BreakableFlags flag) {
+      return self & ~flag;
+    }
     public static Boolean IsFlagSet(this InputButtons self, InputButtons flag) {
       return (self & flag) == flag;
     }
@@ -2414,6 +2457,9 @@ namespace Quantum {
     [FieldOffset(60)]
     [ExcludeFromPrototype()]
     public Int32 CurrActionFlags;
+    [FieldOffset(132)]
+    [ExcludeFromPrototype()]
+    public QListPtr<EntityRef> ActionEntities;
     [FieldOffset(64)]
     [ExcludeFromPrototype()]
     public Int32 CurrBreakableFlags;
@@ -2601,6 +2647,7 @@ namespace Quantum {
         hash = hash * 31 + ActionState.GetHashCode();
         hash = hash * 31 + ActionArg.GetHashCode();
         hash = hash * 31 + CurrActionFlags.GetHashCode();
+        hash = hash * 31 + ActionEntities.GetHashCode();
         hash = hash * 31 + CurrBreakableFlags.GetHashCode();
         hash = hash * 31 + (Byte)BreakableLevel;
         hash = hash * 31 + (Byte)StompPowerLevel;
@@ -2658,6 +2705,13 @@ namespace Quantum {
         hash = hash * 31 + CurrentSpinner.GetHashCode();
         return hash;
       }
+    }
+    public void ClearPointers(FrameBase f, EntityRef entity) {
+      ActionEntities = default;
+    }
+    public static void OnRemoved(FrameBase frame, EntityRef entity, void* ptr) {
+      var p = (Quantum.MarioPlayer*)ptr;
+      p->ClearPointers((Frame)frame, entity);
     }
     public static void Serialize(void* ptr, FrameSerializer serializer) {
         var p = (MarioPlayer*)ptr;
@@ -2725,6 +2779,7 @@ namespace Quantum {
         QBoolean.Serialize(&p->MegaMushroomStationaryEnd, serializer);
         QBoolean.Serialize(&p->PipeEntering, serializer);
         QBoolean.Serialize(&p->UsedPropellerThisJump, serializer);
+        QList.Serialize(&p->ActionEntities, serializer, Statics.SerializeEntityRef);
         AssetRef.Serialize(&p->CharacterAsset, serializer);
         AssetRef.Serialize(&p->PhysicsAsset, serializer);
         AssetRef.Serialize(&p->ReserveItem, serializer);
@@ -4159,7 +4214,7 @@ namespace Quantum {
       SerializeInput = Quantum.Input.Serialize;
     }
     static partial void RegisterSimulationTypesGen(TypeRegistry typeRegistry) {
-      typeRegistry.Register(typeof(ActionFlags), 4);
+      typeRegistry.Register(typeof(Quantum.ActionFlags), 4);
       typeRegistry.Register(typeof(AssetGuid), AssetGuid.SIZE);
       typeRegistry.Register(typeof(AssetRef), AssetRef.SIZE);
       typeRegistry.Register(typeof(Quantum.BannedPlayerInfo), Quantum.BannedPlayerInfo.SIZE);
@@ -4338,7 +4393,7 @@ namespace Quantum {
         .Add<Quantum.Koopa>(Quantum.Koopa.Serialize, null, null, ComponentFlags.None)
         .Add<Quantum.Liquid>(Quantum.Liquid.Serialize, Quantum.Liquid.OnAdded, Quantum.Liquid.OnRemoved, ComponentFlags.None)
         .Add<Quantum.MarioBrosPlatform>(Quantum.MarioBrosPlatform.Serialize, null, null, ComponentFlags.None)
-        .Add<Quantum.MarioPlayer>(Quantum.MarioPlayer.Serialize, null, null, ComponentFlags.None)
+        .Add<Quantum.MarioPlayer>(Quantum.MarioPlayer.Serialize, null, Quantum.MarioPlayer.OnRemoved, ComponentFlags.None)
         .Add<Quantum.MovingPlatform>(Quantum.MovingPlatform.Serialize, Quantum.MovingPlatform.OnAdded, Quantum.MovingPlatform.OnRemoved, ComponentFlags.None)
         .Add<Quantum.ObjectiveCoin>(Quantum.ObjectiveCoin.Serialize, null, null, ComponentFlags.None)
         .Add<Quantum.PhysicsObject>(Quantum.PhysicsObject.Serialize, Quantum.PhysicsObject.OnAdded, Quantum.PhysicsObject.OnRemoved, ComponentFlags.None)
@@ -4354,7 +4409,7 @@ namespace Quantum {
     [Preserve()]
     public static void EnsureNotStrippedGen() {
       FramePrinter.EnsureNotStripped();
-      FramePrinter.EnsurePrimitiveNotStripped<ActionFlags>();
+      FramePrinter.EnsurePrimitiveNotStripped<Quantum.ActionFlags>();
       FramePrinter.EnsurePrimitiveNotStripped<Quantum.BreakableFlags>();
       FramePrinter.EnsurePrimitiveNotStripped<CallbackFlags>();
       FramePrinter.EnsurePrimitiveNotStripped<Quantum.CoinType>();

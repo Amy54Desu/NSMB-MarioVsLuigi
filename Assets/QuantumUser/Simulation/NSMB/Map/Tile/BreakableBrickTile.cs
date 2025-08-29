@@ -25,29 +25,32 @@ public unsafe class BreakableBrickTile : StageTile, IInteractableTile {
         EntityRef bumpOwner = default;
         if (f.Unsafe.TryGetPointer(entity, out MarioPlayer* mario)) {
             // Mario interacting with the block
-            if (mario->CurrentPowerupState < PowerupState.Mushroom) {
-                doBreak = direction switch {
-                    // Small Mario
-                    InteractionDirection.Down when mario->IsGroundpoundActive => BreakingRules.HasFlag(BreakableBy.SmallMarioGroundpound),
-                    InteractionDirection.Down when mario->IsDrilling => BreakingRules.HasFlag(BreakableBy.SmallMarioDrill),
-                    InteractionDirection.Up => BreakingRules.HasFlag(BreakableBy.SmallMario),
-                    _ => false
-                };
-            } else if (mario->CurrentPowerupState == PowerupState.MegaMushroom) {
+            if (mario->CurrentPowerupState == PowerupState.MegaMushroom) {
                 // Mega Mario
                 doBreak = BreakingRules.HasFlag(BreakableBy.MegaMario);
                 brokenByMega = true;
-            } else if (mario->IsInShell) {
-                // Blue Shell
-                doBreak = BreakingRules.HasFlag(BreakableBy.Shells);
+
             } else {
-                doBreak = direction switch {
-                    // Large Mario
-                    InteractionDirection.Down when mario->IsGroundpoundActive => BreakingRules.HasFlag(BreakableBy.LargeMarioGroundpound),
-                    InteractionDirection.Down when mario->IsDrilling => BreakingRules.HasFlag(BreakableBy.LargeMarioDrill),
-                    InteractionDirection.Up => BreakingRules.HasFlag(BreakableBy.LargeMario),
-                    _ => false
-                };
+                switch (direction) {
+                case InteractionDirection.Up:
+                    if (mario->HasBreakableFlags(BreakableFlags.Up)) {
+                        doBreak = mario->BreakableLevel < PowerupState.Mushroom ?
+                            BreakingRules.HasFlag(BreakableBy.SmallMario) : BreakingRules.HasFlag(BreakableBy.LargeMario);
+                    }
+                    break;
+                case InteractionDirection.Down:
+                    if (mario->HasBreakableFlags(BreakableFlags.Down)) {
+                        doBreak = mario->BreakableLevel < PowerupState.Mushroom ?
+                            BreakingRules.HasFlag(BreakableBy.SmallMarioGroundpound) : BreakingRules.HasFlag(BreakableBy.LargeMarioGroundpound);
+                    }
+                    break;
+                case InteractionDirection.Left:
+                case InteractionDirection.Right:
+                    if (mario->HasBreakableFlags(BreakableFlags.Left) || mario->HasBreakableFlags(BreakableFlags.Right)) {
+                        doBreak = BreakingRules.HasFlag(BreakableBy.Shells);
+                    }
+                    break;
+                }
             }
             bumpOwner = entity;
         } else if (f.Unsafe.TryGetPointer(entity, out Koopa* koopa) && koopa->IsKicked) {

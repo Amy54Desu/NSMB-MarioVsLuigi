@@ -195,18 +195,14 @@ namespace Quantum {
             } else {
                 if (attackedFromAbove) {
                     // Light
-                    bool mini = mario->CurrentPowerupState == PowerupState.MiniMushroom;
-                    if (!mini || mario->IsGroundpoundActive) {
-                        Light(f, bobombEntity, bobomb, mini || !mario->IsGroundpoundActive);
+                    if (mario->StompPowerLevel > StompLevel.NoDamage) {
+                        Light(f, bobombEntity, bobomb, mario->StompPowerLevel < StompLevel.Strong);
                     }
-
-                    if (!mini && mario->IsGroundpoundActive) {
+                    
+                    if (mario->StompPowerLevel == StompLevel.Strong) {
                         bobomb->Kick(f, bobombEntity, marioEntity, FPMath.Abs(marioPhysicsObject->Velocity.X) / 3);
-                    } else {
-                        mario->DoEntityBounce = true;
-                        mario->IsGroundpounding = false;
                     }
-                    mario->IsDrilling = false;
+                    mario->CheckEntityBounce(f);
 
                 } else if (mario->IsCrouchedInShell) {
                     // Bounce off blue shell crouched player

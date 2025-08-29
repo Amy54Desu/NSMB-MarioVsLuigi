@@ -2031,7 +2031,7 @@ namespace Quantum {
             bool damageable = !mario->IsInKnockback
                 && mario->CurrentPowerupState != PowerupState.MegaMushroom
                 && mario->IsDamageable
-                && !((mario->IsCrouchedInShell || mario->IsInShell) && projectileAsset.DoesntEffectBlueShell);
+                && !(mario->HasActionFlags(ActionFlags.IsShelled) && projectileAsset.DoesntEffectBlueShell);
 
             if (damageable) {
                 bool didKnockback = false;
@@ -2068,7 +2068,7 @@ namespace Quantum {
                 }
             }
 
-            if (damageable || projectileAsset.DestroyOnHit || ((mario->IsCrouchedInShell || mario->IsInShell) && projectileAsset.DoesntEffectBlueShell)) {
+            if (damageable || projectileAsset.DestroyOnHit || (mario->HasActionFlags(ActionFlags.IsShelled) && projectileAsset.DoesntEffectBlueShell)) {
                 f.Signals.OnProjectileHitEntity(f, projectileEntity, marioEntity);
             }
         }
@@ -2120,13 +2120,9 @@ namespace Quantum {
                 if (marioAMega && marioBMega) {
                     // Both mega
                     if (marioAAbove) {
-                        marioA->DoEntityBounce = true;
-                        marioA->IsGroundpounding = false;
-                        marioA->IsDrilling = false;
+                        marioA->CheckEntityBounce(f, true);
                     } else if (marioBAbove) {
-                        marioB->DoEntityBounce = true;
-                        marioB->IsGroundpounding = false;
-                        marioB->IsDrilling = false;
+                        marioB->CheckEntityBounce(f, true);
                     } else {
                         bool damaged = false;
                         damaged |= marioA->DoKnockback(f, marioAEntity, fromRight, 0, KnockbackStrength.CollisionBump, marioBEntity, true);
