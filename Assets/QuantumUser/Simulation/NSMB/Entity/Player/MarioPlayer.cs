@@ -7,11 +7,38 @@ namespace Quantum {
     public unsafe partial struct MarioPlayer {
 
         public readonly bool IsStarmanInvincible => InvincibilityFrames > 0;
-        public readonly bool IsWallsliding => WallslideLeft || WallslideRight;
-        public readonly bool IsCrouchedInShell => CurrentPowerupState == PowerupState.BlueShell && (IsCrouching || (IsGroundpounding && GroundpoundStartFrames == 0)) && !IsInShell;
+        public readonly bool IsWallsliding => Action is PlayerAction.WallSlide;
+        public readonly bool IsCrouchedInShell => Action is PlayerAction.BlueShellCrouch;
         public readonly bool IsDamageable => !IsStarmanInvincible && DamageInvincibilityFrames == 0;
-        public readonly bool IsInKnockback => CurrentKnockback != KnockbackStrength.None;
+        public readonly bool IsInKnockback => Action is PlayerAction.SoftKnockback or PlayerAction.NormalKnockback or PlayerAction.HardKnockback or PlayerAction.WaterKnockback;
+        public readonly bool IsDead => Action is PlayerAction.Death or PlayerAction.LavaDeath or PlayerAction.Respawning;
         public readonly bool CanCollectOwnTeamsObjectiveCoins => !IsInKnockback && DamageInvincibilityFrames == 0;
+        public const int DropStarRight = 1 << 8;
+        public const int NoStarLoss = -1;
+
+        public enum ActionFlags {
+            Intangible = 1 << 0,             // makes Mario intangible if added
+            IsShelled = 1 << 1,              // Blue Shell action
+            Attacking = 1 << 2,              // hurts enemies
+            NoPlayerBounce = 1 << 3,         // disable bounce off players
+            NoEnemyBounce = 1 << 4,         // disable bounce off enemies
+            AirAction = 1 << 5,             // if the action is in the air
+            WaterAction = 1 << 6,           // if the action is in the water
+            AllowBump = 1 << 7,            // allows bumping into other players
+            AllowHold = 1 << 8,            // allows Mario to pick up items
+            Cutscene = 1 << 9,             // cutscene-like properties
+            CameraChange = 1 << 10,        // changes the way the camera moves (i.e Propeller Spin)
+            DisableTurnaround = 1 << 11,   // disables turn around by left and right
+            DisablePushing = 1 << 12,      // disables pushing
+            UsesSmallHitbox = 1 << 13,     // use the small hitbox even if Mario's big
+            UsesCrouchHitbox = 1 << 14,   // use the crouch hitbox
+            KillMiniStomp = 1 << 15,      // kills Mini players if above
+            StarSpinAction = 1 << 16,     // makes Mario do the star sommersault
+            IrregularVelocity = 1 << 17, // velocity isn't controlled by the regular left and right inputs
+            Holding = 1 << 18,           // Mario is holding something in the action
+            OverrideAll = 1 << 19,       // skip every method only letting the HandleActions method run
+            IgnoreWater = 1 << 20,      // do not set Mario's action to Swimming
+        }
 
         public readonly byte? GetTeam(Frame f) {
             var data = QuantumUtils.GetPlayerData(f, PlayerRef);
@@ -20,6 +47,263 @@ namespace Quantum {
             } else {
                 return (byte) (data->RealTeam % Constants.MaxPlayers);
             }
+        }
+
+        public readonly int GetDeathArgs(Frame f) {
+            if (!f.Global->Rules.IsLivesEnabled || Lives > 0) {
+                return 0;
+            } else {
+                return 2;
+            }
+        }
+
+        public static ActionFlags GetActionFlags(PlayerAction action) {
+            return action switch {
+                PlayerAction.Idle => ActionFlags.AllowBump,
+                PlayerAction.Walk => ActionFlags.AllowBump | ActionFlags.AllowHold,
+                PlayerAction.Skidding => ActionFlags.AllowBump,
+                PlayerAction.Crouch => ActionFlags.AllowBump | ActionFlags.UsesCrouchHitbox | ActionFlags.IrregularVelocity,
+                PlayerAction.CrouchAir => ActionFlags.AllowBump | ActionFlags.UsesCrouchHitbox | ActionFlags.AirAction,
+                PlayerAction.Sliding => ActionFlags.AllowBump | ActionFlags.Attacking | ActionFlags.IrregularVelocity,
+                // PlayerAction.Bounce                 => 0 all this action does is set to another action
+                PlayerAction.SingleJump => ActionFlags.AllowBump | ActionFlags.AllowHold | ActionFlags.AirAction,
+                PlayerAction.DoubleJump => ActionFlags.AllowBump | ActionFlags.AllowHold | ActionFlags.AirAction,
+                PlayerAction.TripleJump => ActionFlags.AllowBump | ActionFlags.AllowHold |ActionFlags.AirAction,
+                PlayerAction.Freefall => ActionFlags.AllowBump | ActionFlags.AllowHold | ActionFlags.AirAction,
+                PlayerAction.HoldIdle => ActionFlags.AllowBump | ActionFlags.Holding,
+                PlayerAction.HoldWalk => ActionFlags.AllowBump | ActionFlags.Holding,
+                PlayerAction.HoldJump => ActionFlags.AllowBump | ActionFlags.Holding | ActionFlags.AirAction,
+                PlayerAction.HoldFall => ActionFlags.AllowBump | ActionFlags.Holding | ActionFlags.AirAction,
+                PlayerAction.WallSlide => ActionFlags.AirAction,
+                PlayerAction.Wallkick => ActionFlags.AirAction,
+                PlayerAction.GroundPound => ActionFlags.AirAction | ActionFlags.DisableTurnaround | ActionFlags.IrregularVelocity, // a few flags are handled by the action
+                // PlayerAction.MiniGroundPound        => (int) (ActionFlags.AirAction), // has player bounce
+                PlayerAction.SoftKnockback => ActionFlags.Intangible | ActionFlags.DisableTurnaround | ActionFlags.IrregularVelocity,
+                PlayerAction.NormalKnockback => ActionFlags.Intangible | ActionFlags.DisableTurnaround | ActionFlags.IrregularVelocity,
+                PlayerAction.HardKnockback => ActionFlags.Intangible | ActionFlags.DisableTurnaround | ActionFlags.IrregularVelocity,
+                PlayerAction.SpinBlockSpin => ActionFlags.AirAction | ActionFlags.CameraChange,
+                PlayerAction.SpinBlockDrill => ActionFlags.AirAction | ActionFlags.NoPlayerBounce,
+                PlayerAction.BlueShellCrouch => ActionFlags.IsShelled | ActionFlags.DisableTurnaround | ActionFlags.UsesCrouchHitbox | ActionFlags.IrregularVelocity,
+                PlayerAction.BlueShellCrouchAir => ActionFlags.IsShelled | ActionFlags.DisableTurnaround | ActionFlags.UsesCrouchHitbox | ActionFlags.IrregularVelocity,
+                PlayerAction.BlueShellSliding => ActionFlags.IsShelled | ActionFlags.DisableTurnaround | ActionFlags.UsesCrouchHitbox | ActionFlags.Attacking | ActionFlags.AirAction | ActionFlags.NoPlayerBounce | ActionFlags.IrregularVelocity,
+                PlayerAction.BlueShellJump => ActionFlags.IsShelled | ActionFlags.DisableTurnaround | ActionFlags.UsesCrouchHitbox | ActionFlags.AirAction | ActionFlags.IrregularVelocity, // the no player bounce based off ActionArg
+                // PlayerAction.BlueShellGroundPound   => (int) (ActionFlags.IsShelled | ActionFlags.AirAction | ActionFlags.NoPlayerBounce),
+                PlayerAction.PropellerSpin => ActionFlags.AirAction | ActionFlags.CameraChange,
+                // PlayerAction.PropellerFall          => (int) (ActionFlags.AirAction | ActionFlags.Takes1Star | ActionFlags.GivesNormalKnockback),
+                PlayerAction.PropellerDrill => ActionFlags.AirAction,
+                PlayerAction.MegaMushroom => ActionFlags.Cutscene | ActionFlags.OverrideAll,
+                PlayerAction.PowerupShoot => ActionFlags.AllowBump,
+                PlayerAction.Pushing => ActionFlags.AllowBump,
+                PlayerAction.Death => ActionFlags.Cutscene | ActionFlags.Intangible | ActionFlags.OverrideAll,
+                PlayerAction.LavaDeath => ActionFlags.Cutscene | ActionFlags.Intangible | ActionFlags.OverrideAll,
+                PlayerAction.Respawning => ActionFlags.Cutscene | ActionFlags.Intangible,
+                PlayerAction.EnteringPipe => ActionFlags.Cutscene | ActionFlags.Intangible,
+                PlayerAction.Swimming => ActionFlags.WaterAction,
+                PlayerAction.WaterKnockback => ActionFlags.WaterAction,
+                _ => 0 // null
+            };
+        }
+
+        public void DropItem(Frame f, EntityRef entity) {
+            if (f.Unsafe.TryGetPointer(HeldEntity, out Holdable* heldItem)) {
+                heldItem->Throw(f, entity, true);
+            }
+        }
+
+        public void ThrowItem(Frame f, EntityRef entity) {
+            if (f.Unsafe.TryGetPointer(HeldEntity, out Holdable* heldItem)) {
+                heldItem->Throw(f, entity, false);
+            }
+        }
+
+        public void DiscardItem(Frame f, EntityRef entity) {
+            if (f.Unsafe.TryGetPointer(HeldEntity, out Holdable* heldItem)) {
+                heldItem->DropWithoutThrowing(f, entity);
+            }
+        }
+
+        public PlayerAction SetPlayerAction(PlayerAction playerAction, Frame f, int arg = 0, bool throwItem = false, bool dropItem = false, bool discardItem = false) {
+            PrevAction = Action;
+            PreActionInput = default;
+            if (PlayerRef.IsValid && f.GetPlayerInput(PlayerRef) != null) {
+                PreActionInput = *f.GetPlayerInput(PlayerRef);
+            }
+
+            if (throwItem) {
+                ThrowItem(f, actionObjectB);
+            } else if (dropItem) {
+                DropItem(f, actionObjectB);
+            } else if (discardItem) {
+                DiscardItem(f, actionObjectB);
+            }
+
+            Action = playerAction;
+
+            ActionTimer = 0;
+            ActionState = 0;
+            ActionArg = arg;
+
+            ClearStompEvents();
+            SetStompLevel();
+            SetActionFlags(GetActionFlags(Action));
+
+            BreakableLevel = CurrentPowerupState;
+            if (HasActionFlags(ActionFlags.AirAction)) {
+                // assume they can break ceilings
+                SetBreakableFlags(BreakableFlags.Up);
+            } else {
+                CurrBreakableFlags = 0;
+            }
+
+            UnityEngine.Debug.Log($"[Player] Set action to [{Enum.GetName(typeof(PlayerAction), playerAction)}] with Arg [{arg}]");
+            return Action;
+        }
+
+        public bool SetPlayerActionOnce(PlayerAction playerAction, Frame f, int arg = 0) {
+            if (Action == playerAction) {
+                return false;
+            }
+            SetPlayerAction(playerAction, f, arg);
+            return true;
+        }
+
+        public PlayerAction? SetGroundAction(PhysicsObject* physicsObject, Frame f, PlayerAction? groundAction = null, int actionArg = 0) {
+            if (physicsObject->IsTouchingGround) {
+                PlayerAction targetAction;
+                if (groundAction == null) {
+                    if (HasActionFlags(ActionFlags.Holding)) {
+                        targetAction = physicsObject->Velocity.X != 0 ? PlayerAction.HoldWalk : PlayerAction.HoldIdle;
+                    } else {
+                        targetAction = physicsObject->Velocity.X != 0 ? PlayerAction.Walk : PlayerAction.Idle;
+                    }
+                } else {
+                    targetAction = groundAction.GetValueOrDefault();
+                }
+                return SetPlayerAction(targetAction, f, actionArg);
+            }
+            return null;
+        }
+
+        public PlayerAction? SetAirAction(PhysicsObject* physicsObject, Frame f, PlayerAction? airAction = null, int actionArg = 0, bool ignCoyote = false) {
+            if (ignCoyote) {
+                CoyoteTimeFrames = 0;
+            }
+
+            if (!physicsObject->IsTouchingGround && (CoyoteTimeFrames <= 0)) {
+                PlayerAction targetAction;
+                if (airAction == null) {
+                    if (HasActionFlags(ActionFlags.Holding)) {
+                        targetAction = PlayerAction.HoldFall;
+                    } else {
+                        targetAction = PlayerAction.Freefall;
+                    }
+                } else {
+                    targetAction = airAction.GetValueOrDefault();
+                }
+                return SetPlayerAction(targetAction, f, actionArg);
+            }
+            return null;
+        }
+
+        public PlayerAction? SetWaterAction(PhysicsObject* physicsObject, Frame f, PlayerAction? waterAction = null, int actionArg = 0) {
+            if (physicsObject->IsUnderwater) {
+                PlayerAction targetAction;
+                if (waterAction == null) {
+                    if (HasActionFlags(ActionFlags.Holding)) {
+                        targetAction = PlayerAction.WaterHolding;
+                    } else {
+                        targetAction = PlayerAction.Swimming;
+                    }
+                } else {
+                    targetAction = waterAction.GetValueOrDefault();
+                }
+                return SetPlayerAction(targetAction, f, actionArg);
+            }
+            return null;
+        }
+
+        public readonly bool HasActionFlags(ActionFlags actionFlags) {
+            return (this.CurrActionFlags & (int) actionFlags) != 0;
+        }
+
+        public void AddActionFlags(ActionFlags actionFlags) {
+            this.CurrActionFlags |= (int) actionFlags;
+        }
+
+        public void ClearActionFlags(ActionFlags actionFlags) {
+            this.CurrActionFlags &= ~(int) actionFlags;
+        }
+
+        public void ToggleActionFlags(ActionFlags actionFlags, bool add) {
+            if (!add) {
+                ClearActionFlags(actionFlags);
+            } else {
+                AddActionFlags(actionFlags);
+            }
+        }
+
+        public void SetActionFlags(ActionFlags actionFlags) {
+            this.CurrActionFlags = (int) actionFlags;
+        }
+
+        public readonly bool HasBreakableFlags(BreakableFlags currBreakableFlags) {
+            return (this.CurrBreakableFlags & (int) currBreakableFlags) != 0;
+        }
+
+        public void AddBreakableFlags(BreakableFlags currBreakableFlags) {
+            this.CurrBreakableFlags |= (int) currBreakableFlags;
+        }
+
+        public void ClearBreakableFlags(BreakableFlags currBreakableFlags) {
+            this.CurrBreakableFlags &= ~(int) currBreakableFlags;
+        }
+
+        public void ToggleBreakableFlags(BreakableFlags currBreakableFlags, bool add) {
+            if (!add) {
+                ClearBreakableFlags(currBreakableFlags);
+            } else {
+                AddBreakableFlags(currBreakableFlags);
+            }
+        }
+
+        public void SetBreakableFlags(BreakableFlags currBreakableFlags) {
+            this.CurrBreakableFlags = (int) currBreakableFlags;
+        }
+
+        public void SetStompEvents(PlayerAction victimAction = PlayerAction.NormalKnockback, int starsToDrop = 1) {
+            this.StarStealCount = starsToDrop;
+            this.StompAction = victimAction;
+        }
+
+        public void ClearStompEvents() {
+            this.StarStealCount = NoStarLoss;
+            this.StompAction = default;
+        }
+
+        public StompLevel SetStompLevel(StompLevel level = StompLevel.Normal, StompLevel miniLevel = StompLevel.NoDamage) {
+            StompPowerLevel = CurrentPowerupState == PowerupState.MiniMushroom ? miniLevel : level;
+            return level;
+        }
+
+        public bool CheckEntityBounce(Frame f, bool checkPlayer = false) {
+            // invincible players should never bounce
+            if (IsStarmanInvincible) {
+                return false;
+            }
+
+            if (!checkPlayer) {
+                if (HasActionFlags(ActionFlags.NoEnemyBounce)) {
+                    return false;
+                }
+            } else {
+                if (HasActionFlags(ActionFlags.NoPlayerBounce)) {
+                    return false;
+                }
+            }
+            StompLevel oldStompLevel = StompPowerLevel;
+            SetPlayerAction(PlayerAction.Bounce, f);
+            SetStompLevel(oldStompLevel);
+            return true;
         }
 
         public readonly FPVector2 GetHeldItemOffset(Frame f, EntityRef marioEntity) {
@@ -88,8 +372,7 @@ namespace Quantum {
         public readonly bool InstakillsEnemies(PhysicsObject* physicsObject, bool includeSliding) {
             return CurrentPowerupState == PowerupState.MegaMushroom
                 || IsStarmanInvincible
-                || IsInShell
-                || (((includeSliding && IsSliding) || IsCrouchedInShell) && FPMath.Abs(physicsObject->Velocity.X) > FP._0_33);
+                || HasActionFlags(ActionFlags.Attacking);
         }
 
         public readonly int GetSpeedStage(PhysicsObject* physicsObject, MarioPlayerPhysicsInfo physicsInfo) {
