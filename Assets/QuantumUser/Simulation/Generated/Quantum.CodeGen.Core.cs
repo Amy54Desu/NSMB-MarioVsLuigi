@@ -179,6 +179,7 @@ namespace Quantum {
     Holding = 1 << 18,
     OverrideAll = 1 << 19,
     IgnoreWater = 1 << 20,
+    IgnoreTeams = 1 << 21,
   }
   [System.FlagsAttribute()]
   public enum BreakableFlags : byte {
@@ -2556,13 +2557,13 @@ namespace Quantum {
     [FieldOffset(104)]
     [ExcludeFromPrototype()]
     public QBoolean IsStuckInBlock;
-    [FieldOffset(42)]
+    [FieldOffset(44)]
     [ExcludeFromPrototype()]
-    public UInt16 InvincibilityFrames;
+    public UInt16 StarmanTimer;
     [FieldOffset(18)]
     [ExcludeFromPrototype()]
     public Byte MegaMushroomStartFrames;
-    [FieldOffset(44)]
+    [FieldOffset(42)]
     [ExcludeFromPrototype()]
     public UInt16 MegaMushroomFrames;
     [FieldOffset(16)]
@@ -2680,7 +2681,7 @@ namespace Quantum {
         hash = hash * 31 + KnockbackGetupFrames.GetHashCode();
         hash = hash * 31 + CrushDamageInvincibilityFrames.GetHashCode();
         hash = hash * 31 + IsStuckInBlock.GetHashCode();
-        hash = hash * 31 + InvincibilityFrames.GetHashCode();
+        hash = hash * 31 + StarmanTimer.GetHashCode();
         hash = hash * 31 + MegaMushroomStartFrames.GetHashCode();
         hash = hash * 31 + MegaMushroomFrames.GetHashCode();
         hash = hash * 31 + MegaMushroomEndFrames.GetHashCode();
@@ -2756,8 +2757,8 @@ namespace Quantum {
         serializer.Stream.Serialize((Byte*)&p->CurrentPowerupState);
         serializer.Stream.Serialize((Byte*)&p->PreviousPowerupState);
         serializer.Stream.Serialize((Byte*)&p->StompPowerLevel);
-        serializer.Stream.Serialize(&p->InvincibilityFrames);
         serializer.Stream.Serialize(&p->MegaMushroomFrames);
+        serializer.Stream.Serialize(&p->StarmanTimer);
         serializer.Stream.Serialize(&p->ActionArg);
         serializer.Stream.Serialize(&p->ActionState);
         serializer.Stream.Serialize(&p->ActionTimer);

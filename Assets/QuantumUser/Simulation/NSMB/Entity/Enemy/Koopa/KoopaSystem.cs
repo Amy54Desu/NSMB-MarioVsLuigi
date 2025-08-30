@@ -288,7 +288,7 @@ namespace Quantum {
                     } else if (mario->StompPowerLevel > StompLevel.NoDamage) {
                         koopa->EnterShell(f, koopaEntity, marioEntity, false, false);
                     }
-                    mario->CheckEntityBounce(f);
+                    mario->CheckEntityBounce(f, marioEntity);
                     koopaHoldable->PreviousHolder = marioEntity;
                     koopaHoldable->IgnoreOwnerFrames = 5;
                 } else {

@@ -128,13 +128,13 @@ namespace Quantum {
                     break;
                 case StompLevel.Normal:
                     bulletBill->Kill(f, bulletBillEntity, marioEntity, KillReason.Normal);
-                    mario->CheckEntityBounce(f);
+                    mario->CheckEntityBounce(f, marioEntity);
                     break;
                 case StompLevel.Strong:
                     bulletBill->Kill(f, bulletBillEntity, marioEntity, KillReason.Groundpounded);
                     break;
                 }
-                mario->CheckEntityBounce(f);
+                mario->CheckEntityBounce(f, marioEntity);
             } else if (!mario->IsCrouchedInShell && mario->IsDamageable) {
                 mario->Powerdown(f, marioEntity, false, bulletBillEntity);
             }

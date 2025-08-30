@@ -202,7 +202,7 @@ namespace Quantum {
                     if (mario->StompPowerLevel == StompLevel.Strong) {
                         bobomb->Kick(f, bobombEntity, marioEntity, FPMath.Abs(marioPhysicsObject->Velocity.X) / 3);
                     }
-                    mario->CheckEntityBounce(f);
+                    mario->CheckEntityBounce(f, marioEntity);
 
                 } else if (mario->IsCrouchedInShell) {
                     // Bounce off blue shell crouched player

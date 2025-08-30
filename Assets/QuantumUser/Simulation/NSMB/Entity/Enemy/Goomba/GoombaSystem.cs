@@ -86,7 +86,7 @@ namespace Quantum {
                     goomba->Kill(f, goombaEntity, marioEntity, KillReason.Groundpounded);
                     break;
                 }
-                mario->CheckEntityBounce(f);
+                mario->CheckEntityBounce(f, marioEntity);
             } else if (mario->IsCrouchedInShell) {
                 mario->FacingRight = damageDirection.X < 0;
                 marioPhysicsObject->Velocity.X = 0;

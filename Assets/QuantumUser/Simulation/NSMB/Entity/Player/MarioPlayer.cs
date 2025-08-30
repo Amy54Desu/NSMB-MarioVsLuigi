@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Quantum {
     public unsafe partial struct MarioPlayer {
 
-        public readonly bool IsStarmanInvincible => InvincibilityFrames > 0;
+        public readonly bool IsStarmanInvincible => StarmanTimer > 0;
         public readonly bool IsWallsliding => Action is PlayerAction.WallSlide;
         public readonly bool IsCrouchedInShell => Action is PlayerAction.BlueShellCrouch;
         public readonly bool IsDamageable => !IsStarmanInvincible && DamageInvincibilityFrames == 0;
@@ -83,13 +83,13 @@ namespace Quantum {
 
         public void DropItem(Frame f, EntityRef entity) {
             if (f.Unsafe.TryGetPointer(HeldEntity, out Holdable* heldItem)) {
-                heldItem->Throw(f, entity, true);
+                heldItem->DropWithoutThrowing(f, entity);
             }
         }
 
         public void ThrowItem(Frame f, EntityRef entity) {
             if (f.Unsafe.TryGetPointer(HeldEntity, out Holdable* heldItem)) {
-                heldItem->Throw(f, entity, false);
+                heldItem->Throw(f, entity);
             }
         }
 
@@ -99,7 +99,7 @@ namespace Quantum {
             }
         }
 
-        public PlayerAction SetPlayerAction(Frame f, PlayerAction playerAction, int arg = 0, bool throwItem = false, bool dropItem = false, bool discardItem = false, QListPtr<EntityRef> entityRefs = default) {
+        public PlayerAction SetPlayerAction(Frame f, PlayerAction playerAction, EntityRef entityRef, int arg = 0, bool throwItem = false, bool dropItem = false, bool discardItem = false, QListPtr<EntityRef> entityRefs = default) {
             PrevAction = Action;
             PreActionInput = default;
             if (PlayerRef.IsValid && f.GetPlayerInput(PlayerRef) != null) {
@@ -121,12 +121,15 @@ namespace Quantum {
             ActionArg = arg;
             ActionEntities = entityRefs;
 
-            ClearStompEvents();
+            SetStompEvents(default, NoStarLoss); // clear
             SetStompLevel();
-            SetActionFlags(DefaultActionFlags(playerAction));
+            ActionFlags defaultFlags = DefaultActionFlags(playerAction);
+            SetActionFlags(defaultFlags, 0);
 
             BreakableLevel = CurrentPowerupState;
             int breakableFlags = 0;
+
+            // apply these flags based off flag
             if (HasActionFlags(ActionFlags.AirAction)) {
                 // assume they can break ceilings
                 breakableFlags |= (int)BreakableFlags.Up;
@@ -137,18 +140,19 @@ namespace Quantum {
             CurrBreakableFlags = breakableFlags;
 
             UnityEngine.Debug.Log($"[Player] Set action to [{Enum.GetName(typeof(PlayerAction), playerAction)}] with Arg [{arg}]");
+            f.Events.MarioPlayerChangedAction(entityRef, playerAction, defaultFlags, arg);
             return Action;
         }
 
-        public bool SetPlayerActionOnce(Frame f, PlayerAction playerAction, int arg = 0) {
+        public bool SetPlayerActionOnce(Frame f, PlayerAction playerAction, EntityRef entityRef, int arg = 0) {
             if (Action == playerAction) {
                 return false;
             }
-            SetPlayerAction(f, playerAction, arg);
+            SetPlayerAction(f, playerAction, entityRef, arg);
             return true;
         }
 
-        public PlayerAction? SetGroundAction(Frame f, PhysicsObject* physicsObject, PlayerAction? groundAction = null, int actionArg = 0) {
+        public PlayerAction? SetGroundAction(Frame f, PhysicsObject* physicsObject, EntityRef entityRef, PlayerAction? groundAction = null, int actionArg = 0) {
             if (physicsObject->IsTouchingGround) {
                 PlayerAction targetAction;
                 if (groundAction == null) {
@@ -160,12 +164,12 @@ namespace Quantum {
                 } else {
                     targetAction = groundAction.GetValueOrDefault();
                 }
-                return SetPlayerAction(f, targetAction, actionArg);
+                return SetPlayerAction(f, targetAction, entityRef, actionArg);
             }
             return null;
         }
 
-        public PlayerAction? SetAirAction(Frame f, PhysicsObject* physicsObject, PlayerAction? airAction = null, int actionArg = 0, bool ignCoyote = false) {
+        public PlayerAction? SetAirAction(Frame f, PhysicsObject* physicsObject, EntityRef entityRef, PlayerAction? airAction = null, int actionArg = 0, bool ignCoyote = false) {
             if (ignCoyote) {
                 CoyoteTimeFrames = 0;
             }
@@ -181,12 +185,12 @@ namespace Quantum {
                 } else {
                     targetAction = airAction.GetValueOrDefault();
                 }
-                return SetPlayerAction(f, targetAction, actionArg);
+                return SetPlayerAction(f, targetAction, entityRef, actionArg);
             }
             return null;
         }
 
-        public PlayerAction? SetWaterAction(Frame f, PhysicsObject* physicsObject, PlayerAction? waterAction = null, int actionArg = 0) {
+        public PlayerAction? SetWaterAction(Frame f, PhysicsObject* physicsObject, EntityRef entityRef, PlayerAction? waterAction = null, int actionArg = 0) {
             if (physicsObject->IsUnderwater) {
                 PlayerAction targetAction;
                 if (waterAction == null) {
@@ -198,67 +202,58 @@ namespace Quantum {
                 } else {
                     targetAction = waterAction.GetValueOrDefault();
                 }
-                return SetPlayerAction(f, targetAction, actionArg);
+                return SetPlayerAction(f, targetAction, entityRef, actionArg);
             }
             return null;
         }
 
         public readonly bool HasActionFlags(ActionFlags actionFlags) {
-            return (this.CurrActionFlags & (int) actionFlags) != 0;
+            return (CurrActionFlags & (int) actionFlags) != 0;
         }
 
-        public void AddActionFlags(ActionFlags actionFlags) {
-            this.CurrActionFlags |= (int) actionFlags;
-        }
-
-        public void ClearActionFlags(ActionFlags actionFlags) {
-            this.CurrActionFlags &= ~(int) actionFlags;
-        }
-
-        public void ToggleActionFlags(ActionFlags actionFlags, bool add) {
-            if (!add) {
-                ClearActionFlags(actionFlags);
-            } else {
-                AddActionFlags(actionFlags);
+        public void SetActionFlags(ActionFlags actionFlags, int mode, bool add = false) {
+            switch (mode) {
+            case 0:
+                CurrActionFlags = (int) actionFlags;
+                break;
+            case 1:
+                CurrActionFlags |= (int) actionFlags;
+                break;
+            case 2:
+                CurrActionFlags &= ~(int) actionFlags;
+                break;
+            case 3:
+                if (add) SetActionFlags(actionFlags, 1);
+                else SetActionFlags(actionFlags, 2);
+                break;
             }
-        }
-
-        public void SetActionFlags(ActionFlags actionFlags) {
-            this.CurrActionFlags = (int) actionFlags;
         }
 
         public readonly bool HasBreakableFlags(BreakableFlags currBreakableFlags) {
-            return (this.CurrBreakableFlags & (int) currBreakableFlags) != 0;
+            return (CurrBreakableFlags & (int) currBreakableFlags) != 0;
         }
 
-        public void AddBreakableFlags(BreakableFlags currBreakableFlags) {
-            this.CurrBreakableFlags |= (int) currBreakableFlags;
-        }
-
-        public void ClearBreakableFlags(BreakableFlags currBreakableFlags) {
-            this.CurrBreakableFlags &= ~(int) currBreakableFlags;
-        }
-
-        public void ToggleBreakableFlags(BreakableFlags currBreakableFlags, bool add) {
-            if (!add) {
-                ClearBreakableFlags(currBreakableFlags);
-            } else {
-                AddBreakableFlags(currBreakableFlags);
+        public void SetBreakableFlags(BreakableFlags breakableFlags, int mode, bool add = false) {
+            switch (mode) {
+            case 0:
+                CurrBreakableFlags = (int) breakableFlags;
+                break;
+            case 1:
+                CurrBreakableFlags |= (int) breakableFlags;
+                break;
+            case 2:
+                CurrBreakableFlags &= ~(int) breakableFlags;
+                break;
+            case 3:
+                if (add) SetBreakableFlags(breakableFlags, 1);
+                else SetBreakableFlags(breakableFlags, 2);
+                break;
             }
         }
 
-        public void SetBreakableFlags(BreakableFlags currBreakableFlags) {
-            this.CurrBreakableFlags = (int) currBreakableFlags;
-        }
-
         public void SetStompEvents(PlayerAction victimAction = PlayerAction.NormalKnockback, int starsToDrop = 1) {
-            this.StarStealCount = starsToDrop;
-            this.StompAction = victimAction;
-        }
-
-        public void ClearStompEvents() {
-            this.StarStealCount = NoStarLoss;
-            this.StompAction = default;
+            StarStealCount = starsToDrop;
+            StompAction = victimAction;
         }
 
         public StompLevel SetStompLevel(StompLevel level = StompLevel.Normal, StompLevel miniLevel = StompLevel.NoDamage) {
@@ -266,7 +261,7 @@ namespace Quantum {
             return level;
         }
 
-        public bool CheckEntityBounce(Frame f, bool checkPlayer = false) {
+        public bool CheckEntityBounce(Frame f, EntityRef entityRef, bool checkPlayer = false) {
             // invincible players should never bounce
             if (IsStarmanInvincible) {
                 return false;
@@ -282,8 +277,8 @@ namespace Quantum {
                 }
             }
             StompLevel oldStompLevel = StompPowerLevel;
-            SetPlayerAction(f, PlayerAction.Bounce);
-            //SetStompLevel(oldStompLevel);
+            SetPlayerAction(f, PlayerAction.Bounce, entityRef);
+            SetStompLevel(oldStompLevel);
             return true;
         }
 
@@ -619,7 +614,7 @@ namespace Quantum {
             PreviousPowerupState = CurrentPowerupState = PowerupState.NoPowerup;
             //animationController.DisableAllModels();
             DamageInvincibilityFrames = 0;
-            InvincibilityFrames = 0;
+            StarmanTimer = 0;
             MegaMushroomFrames = 0;
             MegaMushroomStartFrames = 0;
             MegaMushroomEndFrames = 0;
@@ -799,8 +794,8 @@ namespace Quantum {
             IsInShell = false;
             PipeEntering = true;
 
-            if (InvincibilityFrames > 0) {
-                InvincibilityFrames += (ushort) (PipeFrames * 2);
+            if (StarmanTimer > 0) {
+                StarmanTimer += (ushort) (PipeFrames * 2);
             }
 
             f.Events.MarioPlayerEnteredPipe(mario, CurrentPipe);
