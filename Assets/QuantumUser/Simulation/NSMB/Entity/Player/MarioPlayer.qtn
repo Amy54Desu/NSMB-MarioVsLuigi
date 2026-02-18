@@ -72,10 +72,11 @@ enum PlayerAction : Byte {
 	WaterWalk,
 	WaterHolding,
 	WaterKnockback,
+	WaterCrouch,
 }
 
 flags ActionFlags : Int32 {
-    Intangible,             // makes Mario intangible if added
+    NoKnockback,             // makes Mario immune to knockback when enabled
     IsShelled,              // Blue Shell action
     Attacking,              // hurts enemies
     NoPlayerBounce,         // disable bounce off players
@@ -96,7 +97,7 @@ flags ActionFlags : Int32 {
     Holding,           // Mario is holding something in the action
     OverrideAll,       // skip every method only letting the HandleActions method run
     IgnoreWater,      // do not set Mario's action to Swimming
-	IgnoreTeams, // will cause the attack to ignore teams
+	IgnoreTeams,	// will cause the attack to ignore teams
 }
 
 flags BreakableFlags : Byte {

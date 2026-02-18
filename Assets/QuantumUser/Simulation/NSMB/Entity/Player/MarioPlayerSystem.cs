@@ -82,6 +82,7 @@ namespace Quantum {
 
             bool wasGroundpoundActive = mario->IsGroundpounding;
             HandleGlobals(f, ref filter, physics, stage); // these run every frame
+            HandleActions(f, ref filter, physics, stage);
             HandlePowerups(f, ref filter, physics, stage);
             HandleBreakingBlocks(f, ref filter, physics, stage);
             HandleCrouching(f, ref filter, physics);
@@ -164,14 +165,14 @@ namespace Quantum {
         #endregion
 
         public void HandleWalkingRunning(Frame f, ref Filter filter, MarioPlayerPhysicsInfo physics) {
-            using var profilerScope = HostProfiler.Start("MarioPlayerSystem.HandleWalkingRunning");
-            var mario = filter.MarioPlayer;
+            
+            
 
             if (!QuantumUtils.Decrement(ref mario->WalljumpFrames)) {
                 return;
             }
 
-            var physicsObject = filter.PhysicsObject;
+            
 
             if (mario->GroundpoundStandFrames > 0) {
                 if (!physicsObject->IsTouchingGround) {
@@ -199,212 +200,7 @@ namespace Quantum {
             }
             */
 
-            ref var inputs = ref filter.Inputs;
-            bool mega = mario->CurrentPowerupState == PowerupState.MegaMushroom;
-            bool run = (inputs.Sprint.IsDown || mega || mario->IsPropellerFlying) && (mega || !mario->IsSpinnerFlying);
-            int maxStage;
-            if (swimming) {
-                if (mario->CurrentPowerupState == PowerupState.BlueShell) {
-                    maxStage = physics.SwimShellMaxVelocity.Length - 1;
-                } else {
-                    maxStage = physics.SwimMaxVelocity.Length - 1;
-                }
-            } else if (mario->IsStarmanInvincible && run && physicsObject->IsTouchingGround) {
-                maxStage = physics.StarSpeedStage;
-            } else if (run) {
-                maxStage = physics.RunSpeedStage;
-            } else {
-                maxStage = physics.WalkSpeedStage;
-            }
-
-            FP[] maxArray = physics.WalkMaxVelocity;
-            if (swimming) {
-                if (physicsObject->IsTouchingGround) {
-                    maxArray = mario->CurrentPowerupState == PowerupState.BlueShell ? physics.SwimWalkShellMaxVelocity : physics.SwimWalkMaxVelocity;
-                } else {
-                    maxArray = mario->CurrentPowerupState == PowerupState.BlueShell ? physics.SwimShellMaxVelocity : physics.SwimMaxVelocity;
-                }
-            }
-            int stage = mario->GetSpeedStage(physicsObject, physics);
-
-            FP acc;
-            if (swimming) {
-                if (physicsObject->IsTouchingGround) {
-                    acc = mario->CurrentPowerupState == PowerupState.BlueShell ? physics.SwimWalkShellAcceleration[stage] : physics.SwimWalkAcceleration[stage];
-                } else {
-                    acc = mario->CurrentPowerupState == PowerupState.BlueShell ? physics.SwimShellAcceleration[stage] : physics.SwimAcceleration[stage];
-                }
-            } else if (physicsObject->IsOnSlipperyGround) {
-                acc = physics.WalkIceAcceleration[stage];
-            } else if (mario->CurrentPowerupState == PowerupState.MegaMushroom) {
-                acc = physics.WalkMegaAcceleration[stage];
-            } else {
-                acc = physics.WalkAcceleration[stage];
-            }
-
-            FP xVel = physicsObject->Velocity.X;
-            FP xVelAbs = FPMath.Abs(xVel);
-            int sign = FPMath.SignInt(xVel);
-            bool uphill = FPMath.Abs(physicsObject->FloorAngle) > physics.SlideMinimumAngle && FPMath.SignInt(physicsObject->FloorAngle) != sign;
-
-            if (!physicsObject->IsTouchingGround) {
-                mario->FastTurnaroundFrames = 0;
-            }
-
-            if (mario->FastTurnaroundFrames > 0) {
-                physicsObject->Velocity.X = 0;
-                if (QuantumUtils.Decrement(ref mario->FastTurnaroundFrames)) {
-                    mario->IsTurnaround = true;
-                }
-            } else if (mario->IsTurnaround && !physicsObject->IsOnSlipperyGround) {
-                // Can't fast turnaround on ice.
-                mario->IsTurnaround = physicsObject->IsTouchingGround && !mario->IsCrouching && xVelAbs < physics.WalkMaxVelocity[1] && !physicsObject->IsTouchingLeftWall && !physicsObject->IsTouchingRightWall;
-                mario->IsSkidding = mario->IsTurnaround;
-
-                physicsObject->Velocity.X += (physics.FastTurnaroundAcceleration * (mario->FacingRight ? -1 : 1) * f.DeltaTime);
-            } else if ((inputs.Left ^ inputs.Right)
-                       && (!mario->IsCrouching || (mario->IsCrouching && !physicsObject->IsTouchingGround && mario->CurrentPowerupState != PowerupState.BlueShell))
-                       && !mario->IsInKnockback
-                       && !mario->IsSliding) {
-
-                // We can walk here
-                int direction = inputs.Left ? -1 : 1;
-                if (mario->IsSkidding) {
-                    direction = -sign;
-                }
-
-                bool reverse = physicsObject->Velocity.X != 0 && (direction != sign);
-
-                // Check that we're not going above our limit
-                FP max = maxArray[maxStage];
-                if (!swimming) {
-                    max += CalculateSlopeMaxSpeedOffset(FPMath.Abs(physicsObject->FloorAngle) * (uphill ? 1 : -1));
-                }
-                FP maxAcceleration = FPMath.Abs(max - xVelAbs) * f.UpdateRate;
-                acc = FPMath.Clamp(acc, -maxAcceleration, maxAcceleration);
-                if (xVelAbs > max) {
-                    /*
-                    // This kills water hyperspeed.
-                    // technically, it's accurate. but it's fun... soo...
-                    if (swimming) {
-                        acc = physics.WalkAcceleration[^1];
-                    }
-                    */
-                    acc = -acc;
-                }
-
-                if (reverse) {
-                    mario->IsTurnaround = false;
-                    if (physicsObject->IsTouchingGround) {
-                        if (!swimming && xVelAbs >= physics.SkiddingMinimumVelocity && !mario->HeldEntity.IsValid && mario->CurrentPowerupState != PowerupState.MegaMushroom) {
-                            mario->IsSkidding = true;
-                            mario->FacingRight = sign == 1;
-                        }
-
-                        if (mario->IsSkidding) {
-                            if (physicsObject->IsOnSlipperyGround) {
-                                acc = physics.SkiddingIceDeceleration;
-                            } else if (xVelAbs > maxArray[physics.RunSpeedStage]) {
-                                acc = physics.SkiddingStarmanDeceleration;
-                            } else {
-                                acc = physics.SkiddingDeceleration;
-                            }
-
-                            mario->SlowTurnaroundFrames = 0;
-                        } else {
-                            if (physicsObject->IsOnSlipperyGround) {
-                                acc = physics.SlowTurnaroundIceAcceleration;
-                            } else {
-                                mario->SlowTurnaroundFrames = (byte) FPMath.Clamp(mario->SlowTurnaroundFrames + 1, 0,
-                                    physics.SlowTurnaroundAcceleration.Length - 1);
-                                acc = mario->CurrentPowerupState == PowerupState.MegaMushroom
-                                    ? physics.SlowTurnaroundMegaAcceleration[mario->SlowTurnaroundFrames]
-                                    : physics.SlowTurnaroundAcceleration[mario->SlowTurnaroundFrames];
-                            }
-                        }
-                    } else {
-                        // TODO: change 0.85 to a constant?
-                        acc = physics.WalkAcceleration[0] * Constants._0_85;
-                    }
-                } else {
-                    mario->SlowTurnaroundFrames = 0;
-                    mario->IsSkidding &= !mario->IsTurnaround;
-                }
-
-                FP newX = xVel + (acc * f.DeltaTime * direction);
-
-                if ((xVel < max && newX > max) || (xVel > -max && newX < -max)) {
-                    newX = FPMath.Clamp(newX, -max, max);
-                }
-
-                if (mario->IsSkidding && !mario->IsTurnaround && (FPMath.Sign(newX) != sign || xVelAbs < FP._0_05)) {
-                    // Turnaround
-                    mario->FastTurnaroundFrames = 10;
-                    newX = 0;
-                }
-
-                physicsObject->Velocity.X = newX;
-
-            } else if (physicsObject->IsTouchingGround || swimming) {
-                // Not holding anything, sliding, or holding both directions. decelerate
-                mario->IsSkidding = false;
-                mario->IsTurnaround = false;
-
-                FP angle = FPMath.Abs(physicsObject->FloorAngle);
-                if (mario->IsInKnockback) {
-                    if (physicsObject->IsOnSlipperyGround) {
-                        acc = mario->KnockForwards ? -physics.StomachKnockbackIceDeceleration : -physics.SittingKnockbackIceDeceleration;
-                    } else {
-                        acc = mario->KnockForwards ? -physics.StomachKnockbackDeceleration : -physics.SittingKnockbackDeceleration;
-                    }
-                } else if (swimming) {
-                    if (mario->IsCrouching) {
-                        acc = -physics.WalkAcceleration[0];
-                    } else {
-                        acc = -physics.SwimDeceleration;
-                    }
-                } else if (mario->IsSliding) {
-                    if (angle > physics.SlideMinimumAngle) {
-                        // Uphill / downhill
-                        acc = (angle > 30 ? physics.SlideFastAcceleration : physics.SlideSlowAcceleration) * (uphill ? -1 : 1);
-                    } else {
-                        // Flat ground
-                        acc = -physics.WalkAcceleration[0];
-                    }
-                } else if (physicsObject->IsOnSlipperyGround) {
-                    acc = -physics.WalkButtonReleaseIceDeceleration[stage];
-                } else {
-                    acc = -physics.WalkButtonReleaseDeceleration;
-                }
-
-                FP newX = xVel + acc * f.DeltaTime * sign;
-                FP target = (angle > 30 && physicsObject->IsOnSlideableGround) ? FPMath.Sign(physicsObject->FloorAngle) * physics.WalkMaxVelocity[0] : 0;
-                if ((sign == -1) ^ (newX <= target)) {
-                    newX = target;
-                }
-
-                if (mario->IsSliding) {
-                    newX = FPMath.Clamp(newX, -physics.SlideMaxVelocity, physics.SlideMaxVelocity);
-                }
-
-                physicsObject->Velocity.X = newX;
-
-                if (newX != 0) {
-                    mario->FacingRight = newX > 0;
-                }
-            }
-
-            bool wasInShell = mario->IsInShell;
-            mario->IsInShell |= mario->CurrentPowerupState == PowerupState.BlueShell && !mario->IsSliding && physicsObject->IsTouchingGround
-                                && run && !mario->HeldEntity.IsValid
-                                && FPMath.Abs(physicsObject->Velocity.X) >= physics.WalkMaxVelocity[physics.RunSpeedStage] * Constants._0_90
-                                && (physicsObject->Velocity.X > 0) == mario->FacingRight;
-
-            mario->IsCrouching &= !mario->IsSliding;
-            /*
-            if (!wasInShell && mario->IsInShell) {
-                f.Events.MarioPlayerCrouched(filter.Entity, mario->CurrentPowerupState);
-            }*/
+            
         }
 
         private static FP CalculateSlopeMaxSpeedOffset(FP floorAngle) {
@@ -1336,6 +1132,360 @@ namespace Quantum {
 
             return false;
         }
+
+        #region Actions
+        private void ActionIdleWalking(Frame f, ref Filter filter, MarioPlayerPhysicsInfo physics, VersusStageData stage) {
+            var mario = filter.MarioPlayer;
+            var physicsObject = filter.PhysicsObject;
+
+            ref var inputs = ref filter.Inputs;
+            ref var entityRef = ref filter.Entity;
+            bool mega = mario->CurrentPowerupState == PowerupState.MegaMushroom;
+            bool run = (inputs.Sprint.IsDown || mega);
+            int maxStage;
+            if (mario->IsStarmanInvincible && run && physicsObject->IsTouchingGround) {
+                maxStage = physics.StarSpeedStage;
+            } else if (run) {
+                maxStage = physics.RunSpeedStage;
+            } else {
+                maxStage = physics.WalkSpeedStage;
+            }
+
+            FP[] maxArray = physics.WalkMaxVelocity;
+            int spdStage = mario->GetSpeedStage(physicsObject, physics);
+
+            FP acc;
+            if (physicsObject->IsOnSlipperyGround) {
+                acc = physics.WalkIceAcceleration[spdStage];
+            } else if (mario->CurrentPowerupState == PowerupState.MegaMushroom) {
+                acc = physics.WalkMegaAcceleration[spdStage];
+            } else {
+                acc = physics.WalkAcceleration[spdStage];
+            }
+
+            FP xVel = physicsObject->Velocity.X;
+            FP xVelAbs = FPMath.Abs(xVel);
+            int sign = FPMath.SignInt(xVel);
+            bool uphill = FPMath.Abs(physicsObject->FloorAngle) > physics.SlideMinimumAngle && FPMath.SignInt(physicsObject->FloorAngle) != sign;
+
+            if (!physicsObject->IsTouchingGround) {
+                mario->FastTurnaroundFrames = 0;
+            }
+
+            if (mario->FastTurnaroundFrames > 0) {
+                physicsObject->Velocity.X = 0;
+                if (QuantumUtils.Decrement(ref mario->FastTurnaroundFrames)) {
+                    mario->IsTurnaround = true;
+                }
+            } else if (mario->IsTurnaround && !physicsObject->IsOnSlipperyGround) {
+                // Can't fast turnaround on ice.
+                mario->IsTurnaround = physicsObject->IsTouchingGround && xVelAbs < physics.WalkMaxVelocity[1] && !physicsObject->IsTouchingLeftWall && !physicsObject->IsTouchingRightWall;
+                if (mario->IsTurnaround) mario->SetPlayerActionOnce(f, PlayerAction.Skidding, entityRef);
+
+                physicsObject->Velocity.X += (physics.FastTurnaroundAcceleration * (mario->FacingRight ? -1 : 1) * f.DeltaTime);
+            } else if (inputs.Left ^ inputs.Right) {
+
+                // We can walk here
+                int direction = inputs.Left ? -1 : 1;
+                if (mario->IsSkidding) {
+                    direction = -sign;
+                }
+
+                bool reverse = physicsObject->Velocity.X != 0 && (direction != sign);
+
+                // Check that we're not going above our limit
+                FP max = maxArray[maxStage];
+                max += CalculateSlopeMaxSpeedOffset(FPMath.Abs(physicsObject->FloorAngle) * (uphill ? 1 : -1));
+                FP maxAcceleration = FPMath.Abs(max - xVelAbs) * f.UpdateRate;
+                acc = FPMath.Clamp(acc, -maxAcceleration, maxAcceleration);
+                if (xVelAbs > max) {
+                    /*
+                    // This kills water hyperspeed.
+                    // technically, it's accurate. but it's fun... soo...
+                    if (swimming) {
+                        acc = physics.WalkAcceleration[^1];
+                    }
+                    */
+                    acc = -acc;
+                }
+
+                if (reverse) {
+                    mario->IsTurnaround = false;
+                    if (physicsObject->IsTouchingGround) {
+                        if (xVelAbs >= physics.SkiddingMinimumVelocity && !mario->HeldEntity.IsValid && mario->CurrentPowerupState != PowerupState.MegaMushroom) {
+                            mario->SetPlayerActionOnce(f, PlayerAction.Skidding, entityRef);
+                            mario->FacingRight = sign == 1;
+                        }
+
+                        if (mario->Action == PlayerAction.Skidding) {
+                            if (physicsObject->IsOnSlipperyGround) {
+                                acc = physics.SkiddingIceDeceleration;
+                            } else if (xVelAbs > maxArray[physics.RunSpeedStage]) {
+                                acc = physics.SkiddingStarmanDeceleration;
+                            } else {
+                                acc = physics.SkiddingDeceleration;
+                            }
+
+                            mario->SlowTurnaroundFrames = 0;
+                        } else {
+                            if (physicsObject->IsOnSlipperyGround) {
+                                acc = physics.SlowTurnaroundIceAcceleration;
+                            } else {
+                                mario->SlowTurnaroundFrames = (byte) FPMath.Clamp(mario->SlowTurnaroundFrames + 1, 0,
+                                    physics.SlowTurnaroundAcceleration.Length - 1);
+                                acc = mario->CurrentPowerupState == PowerupState.MegaMushroom
+                                    ? physics.SlowTurnaroundMegaAcceleration[mario->SlowTurnaroundFrames]
+                                    : physics.SlowTurnaroundAcceleration[mario->SlowTurnaroundFrames];
+                            }
+                        }
+                    } else {
+                        // TODO: change 0.85 to a constant?
+                        acc = physics.WalkAcceleration[0] * Constants._0_85;
+                    }
+                } else {
+                    mario->SlowTurnaroundFrames = 0;
+                    mario->IsSkidding &= !mario->IsTurnaround;
+                }
+
+                FP newX = xVel + (acc * f.DeltaTime * direction);
+
+                if ((xVel < max && newX > max) || (xVel > -max && newX < -max)) {
+                    newX = FPMath.Clamp(newX, -max, max);
+                }
+
+                if (mario->IsSkidding && !mario->IsTurnaround && (FPMath.Sign(newX) != sign || xVelAbs < FP._0_05)) {
+                    // Turnaround
+                    mario->FastTurnaroundFrames = 10;
+                    newX = 0;
+                }
+
+                physicsObject->Velocity.X = newX;
+
+            } else if (physicsObject->IsTouchingGround || swimming) {
+                // Not holding anything, sliding, or holding both directions. decelerate
+                mario->IsSkidding = false;
+                mario->IsTurnaround = false;
+
+                FP angle = FPMath.Abs(physicsObject->FloorAngle);
+                if (mario->IsInKnockback) {
+                    if (physicsObject->IsOnSlipperyGround) {
+                        acc = mario->KnockForwards ? -physics.StomachKnockbackIceDeceleration : -physics.SittingKnockbackIceDeceleration;
+                    } else {
+                        acc = mario->KnockForwards ? -physics.StomachKnockbackDeceleration : -physics.SittingKnockbackDeceleration;
+                    }
+                } else if (mario->IsSliding) {
+                    if (angle > physics.SlideMinimumAngle) {
+                        // Uphill / downhill
+                        acc = (angle > 30 ? physics.SlideFastAcceleration : physics.SlideSlowAcceleration) * (uphill ? -1 : 1);
+                    } else {
+                        // Flat ground
+                        acc = -physics.WalkAcceleration[0];
+                    }
+                } else if (physicsObject->IsOnSlipperyGround) {
+                    acc = -physics.WalkButtonReleaseIceDeceleration[stage];
+                } else {
+                    acc = -physics.WalkButtonReleaseDeceleration;
+                }
+
+                FP newX = xVel + acc * f.DeltaTime * sign;
+                FP target = (angle > 30 && physicsObject->IsOnSlideableGround) ? FPMath.Sign(physicsObject->FloorAngle) * physics.WalkMaxVelocity[0] : 0;
+                if ((sign == -1) ^ (newX <= target)) {
+                    newX = target;
+                }
+
+                if (mario->IsSliding) {
+                    newX = FPMath.Clamp(newX, -physics.SlideMaxVelocity, physics.SlideMaxVelocity);
+                }
+
+                physicsObject->Velocity.X = newX;
+
+                if (newX != 0) {
+                    mario->FacingRight = newX > 0;
+                }
+            }
+
+           bool enterBlueShell = mario->CurrentPowerupState == PowerupState.BlueShell && physicsObject->IsTouchingGround
+                                && run && !mario->HasActionFlags(ActionFlags.Holding)
+                                && FPMath.Abs(physicsObject->Velocity.X) >= physics.WalkMaxVelocity[physics.RunSpeedStage] * Constants._0_90
+                                && (physicsObject->Velocity.X > 0) == mario->FacingRight;
+
+            if (enterBlueShell) {
+                mario->SetPlayerAction(f, PlayerAction.BlueShellSliding, filter.Entity);
+            }
+            /*
+            if (!wasInShell && mario->IsInShell) {
+                f.Events.MarioPlayerCrouched(filter.Entity, mario->CurrentPowerupState);
+            }*/
+        }
+
+        private void ActionSwimming(Frame f, ref Filter filter, MarioPlayerPhysicsInfo physics, VersusStageData stage) {
+            var mario = filter.MarioPlayer;
+            var physicsObject = filter.PhysicsObject;
+
+            ref var inputs = ref filter.Inputs;
+            ref EntityRef entityRef = ref filter.Entity;
+
+            int maxStage;
+            if (mario->CurrentPowerupState == PowerupState.BlueShell) {
+                maxStage = physics.SwimShellMaxVelocity.Length - 1;
+            } else {
+                maxStage = physics.SwimMaxVelocity.Length - 1;
+            }
+
+            FP[] maxArray = physics.WalkMaxVelocity;
+            int spdStage = mario->GetSpeedStage(physicsObject, physics);
+
+            if (physicsObject->IsTouchingGround) {
+                maxArray = mario->CurrentPowerupState == PowerupState.BlueShell ? physics.SwimWalkShellMaxVelocity : physics.SwimWalkMaxVelocity;
+            } else {
+                maxArray = mario->CurrentPowerupState == PowerupState.BlueShell ? physics.SwimShellMaxVelocity : physics.SwimMaxVelocity;
+            }
+
+            FP acc;
+            if (physicsObject->IsTouchingGround) {
+                acc = mario->CurrentPowerupState == PowerupState.BlueShell ? physics.SwimWalkShellAcceleration[spdStage] : physics.SwimWalkAcceleration[spdStage];
+            } else {
+                acc = mario->CurrentPowerupState == PowerupState.BlueShell ? physics.SwimShellAcceleration[spdStage] : physics.SwimAcceleration[spdStage];
+            }
+
+            FP xVel = physicsObject->Velocity.X;
+            FP xVelAbs = FPMath.Abs(xVel);
+            int sign = FPMath.SignInt(xVel);
+            bool uphill = FPMath.Abs(physicsObject->FloorAngle) > physics.SlideMinimumAngle && FPMath.SignInt(physicsObject->FloorAngle) != sign;
+
+            if (inputs.Left ^ inputs.Right) {
+
+                // We can walk here
+                int direction = inputs.Left ? -1 : 1;
+
+                bool reverse = physicsObject->Velocity.X != 0 && (direction != sign);
+
+                // Check that we're not going above our limit
+                FP max = maxArray[maxStage];
+                FP maxAcceleration = FPMath.Abs(max - xVelAbs) * f.UpdateRate;
+                acc = FPMath.Clamp(acc, -maxAcceleration, maxAcceleration);
+                if (xVelAbs > max) {
+                    /*
+                    // This kills water hyperspeed.
+                    // technically, it's accurate. but it's fun... soo...
+                    if (swimming) {
+                        acc = physics.WalkAcceleration[^1];
+                    }
+                    */
+                    acc = -acc;
+                }
+
+                if (reverse) {
+                    mario->IsTurnaround = false;
+                    if (physicsObject->IsTouchingGround) {
+                        mario->SlowTurnaroundFrames = (byte) FPMath.Clamp(mario->SlowTurnaroundFrames + 1, 0,
+                            physics.SlowTurnaroundAcceleration.Length - 1);
+                        acc = mario->CurrentPowerupState == PowerupState.MegaMushroom
+                            ? physics.SlowTurnaroundMegaAcceleration[mario->SlowTurnaroundFrames]
+                            : physics.SlowTurnaroundAcceleration[mario->SlowTurnaroundFrames];
+                    } else {
+                        // TODO: change 0.85 to a constant?
+                        acc = physics.WalkAcceleration[0] * Constants._0_85;
+                    }
+                } else {
+                    mario->SlowTurnaroundFrames = 0;
+                }
+
+                FP newX = xVel + (acc * f.DeltaTime * direction);
+
+                if ((xVel < max && newX > max) || (xVel > -max && newX < -max)) {
+                    newX = FPMath.Clamp(newX, -max, max);
+                }
+
+                if (!mario->IsTurnaround && (FPMath.Sign(newX) != sign || xVelAbs < FP._0_05)) {
+                    // Turnaround
+                    mario->FastTurnaroundFrames = 10;
+                    newX = 0;
+                }
+
+                physicsObject->Velocity.X = newX;
+
+            } else
+                // Not holding anything, sliding, or holding both directions. decelerate
+                mario->IsTurnaround = false;
+
+                FP angle = FPMath.Abs(physicsObject->FloorAngle);
+                if (mario->IsInKnockback) {
+                    if (physicsObject->IsOnSlipperyGround) {
+                        acc = mario->KnockForwards ? -physics.StomachKnockbackIceDeceleration : -physics.SittingKnockbackIceDeceleration;
+                    } else {
+                        acc = mario->KnockForwards ? -physics.StomachKnockbackDeceleration : -physics.SittingKnockbackDeceleration;
+                    }
+                } else {
+                    if (mario->Action == PlayerAction.WaterCrouch) {
+                        acc = -physics.WalkAcceleration[0];
+                    } else {
+                        acc = -physics.SwimDeceleration;
+                    }
+                }
+
+                FP newX = xVel + acc * f.DeltaTime * sign;
+                FP target = (angle > 30 && physicsObject->IsOnSlideableGround) ? FPMath.Sign(physicsObject->FloorAngle) * physics.WalkMaxVelocity[0] : 0;
+                if ((sign == -1) ^ (newX <= target)) {
+                    newX = target;
+                }
+
+                physicsObject->Velocity.X = newX;
+
+                if (newX != 0) {
+                    mario->FacingRight = newX > 0;
+                }
+            }
+        }
+
+        public void HandleActions(Frame f, ref Filter filter, MarioPlayerPhysicsInfo physics, VersusStageData stage) {
+            using var profilerScope = HostProfiler.Start("MarioPlayerSystem.HandleActions");
+            var mario = filter.MarioPlayer;
+            switch (mario->Action) {
+            case PlayerAction.Idle: ActionIdleWalking(f, ref filter, physics, stage); break;
+            case PlayerAction.Walk: ActionIdleWalking(f, ref filter, physics, stage); break;
+            case PlayerAction.Skidding: break; // needs code
+            case PlayerAction.Crouch: ActionCrouching(f, ref filter, physics, stage); break; // velocity is off, needs crouch v-speed
+            case PlayerAction.CrouchAir: ActionCrouchAir(f, ref filter, physics, stage); break;
+            case PlayerAction.Sliding: ActionSliding(f, ref filter, physics, stage); break;
+            case PlayerAction.Bounce: ActionBounce(f, ref filter, physics, stage); break;
+            case PlayerAction.SingleJump: ActionSingleDoubleJump(f, ref filter, physics, stage); break;
+            case PlayerAction.DoubleJump: ActionSingleDoubleJump(f, ref filter, physics, stage); break;
+            case PlayerAction.TripleJump: ActionTripleJump(f, ref filter, physics, stage); break;
+            case PlayerAction.Freefall: ActionFreefall(f, ref filter, physics, stage); break;
+            case PlayerAction.HoldIdle: ActionIdleWalking(f, ref filter, physics, stage); break; // hold action needs fixing
+            case PlayerAction.HoldWalk: ActionIdleWalking(f, ref filter, physics, stage); break; // hold action needs fixing
+            case PlayerAction.HoldJump: ActionHoldJump(f, ref filter, physics, stage); break; // hold action needs fixing
+            case PlayerAction.HoldFall: ActionHoldFall(f, ref filter, physics, stage); break; // hold action needs fixing
+            case PlayerAction.WallSlide: ActionWallSlide(f, ref filter, physics, stage); break;
+            case PlayerAction.Wallkick: ActionWallKick(f, ref filter, physics, stage); break;
+            case PlayerAction.GroundPound: ActionGroundPound(f, ref filter, physics, stage); break;
+            case PlayerAction.SoftKnockback: ActionKnockback(f, ref filter, physics, stage); break;
+            case PlayerAction.NormalKnockback: ActionKnockback(f, ref filter, physics, stage); break;
+            case PlayerAction.HardKnockback: ActionKnockback(f, ref filter, physics, stage); break;
+            case PlayerAction.SpinBlockSpin: ActionSpinBlockSpin(f, ref filter, physics, stage); break;
+            case PlayerAction.SpinBlockDrill: ActionSpinBlockDrill(f, ref filter, physics, stage); break;
+            case PlayerAction.BlueShellCrouch: ActionCrouching(f, ref filter, physics, stage); break;
+            case PlayerAction.BlueShellCrouchAir: ActionCrouchAir(f, ref filter, physics, stage); break;
+            case PlayerAction.BlueShellSliding: ActionBlueShellSliding(f, ref filter, physics, stage); break;
+            case PlayerAction.BlueShellJump: ActionBlueShellJump(f, ref filter, physics, stage); break;
+            case PlayerAction.PropellerSpin: ActionPropellerSpin(f, ref filter, physics, stage); break;
+            case PlayerAction.PropellerDrill: ActionPropellerDrill(f, ref filter, physics, stage); break;
+            case PlayerAction.MegaMushroom: ActionMegaMushroom(f, ref filter, physics, stage); break; // no code
+            case PlayerAction.PowerupShoot: ActionPowerupShoot(f, ref filter, physics, stage); break;
+            case PlayerAction.Pushing: ActionIdleWalking(f, ref filter, physics, stage); break;
+            case PlayerAction.Death: ActionDeath(f, ref filter, physics, stage); break;
+            case PlayerAction.LavaDeath: ActionDeath(f, ref filter, physics, stage); break;
+            case PlayerAction.Respawning: ActionRespawning(f, ref filter, physics, stage); break;
+            case PlayerAction.EnteringPipe: break;
+            case PlayerAction.Swimming: ActionSwimming(f, ref filter, physics, stage); break;
+            case PlayerAction.WaterIdle: ActionSwimming(f, ref filter, physics, stage); break;
+            case PlayerAction.WaterWalk: ActionSwimming(f, ref filter, physics, stage); break;
+            case PlayerAction.WaterHolding: ActionSwimming(f, ref filter, physics, stage); break;
+            case PlayerAction.WaterKnockback: break;
+            }
+        }
+        #endregion
 
         private void HandleGlobals(Frame f, ref Filter filter, MarioPlayerPhysicsInfo physics, VersusStageData stage) {
             QuantumUtils.Decrement(ref filter.MarioPlayer->DamageInvincibilityFrames);

@@ -123,6 +123,7 @@ namespace Quantum {
     WaterWalk,
     WaterHolding,
     WaterKnockback,
+    WaterCrouch,
   }
   public enum PowerupReserveResult : byte {
     None,
@@ -158,7 +159,7 @@ namespace Quantum {
   }
   [System.FlagsAttribute()]
   public enum ActionFlags : int {
-    Intangible = 1 << 0,
+    NoKnockback = 1 << 0,
     IsShelled = 1 << 1,
     Attacking = 1 << 2,
     NoPlayerBounce = 1 << 3,
