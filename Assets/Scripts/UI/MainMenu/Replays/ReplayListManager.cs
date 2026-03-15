@@ -191,8 +191,8 @@ namespace NSMB.UI.MainMenu.Submenus.Replays {
                 // Color and width
                 builder.Append("<width=85%>");
                 if (header.Rules.TeamsEnabled) {
-                    var allTeams = GlobalController.Instance.config.Teams;
-                    TeamAsset team = QuantumUnityDB.GetGlobalAsset(allTeams[info.Team % allTeams.Length]);
+                    var allTeams = AssetRepository<TeamAsset>.AllAssets;
+                    TeamAsset team = allTeams[info.Team % allTeams.Count];
                     builder.Append("<nobr>");
                     builder.Append("<color=#").Append(Utils.ColorToHex(team.color, false)).Append(">").Append(Settings.Instance.GraphicsColorblind ? team.textSpriteColorblind : team.textSpriteNormal);
                 } else {
@@ -272,14 +272,16 @@ namespace NSMB.UI.MainMenu.Submenus.Replays {
         }
 
         public void RemoveReplay(ReplayListEntry replay) {
+            if (!replay) {
+                return;
+            }
+            
             replays.Remove(replay);
             bool wasTemporary = temporaryReplays.Remove(replay);
             
-            if (replay) {
-                Destroy(replay.gameObject);
-                if (replays.Count == 0) {
-                    noReplaysText.text = GlobalController.Instance.translationManager.GetTranslation(Settings.Instance.GeneralReplaysEnabled ? "ui.extras.replays.none" : "ui.extras.replays.disabled");
-                }
+            Destroy(replay.gameObject);
+            if (replays.Count == 0) {
+                noReplaysText.text = GlobalController.Instance.translationManager.GetTranslation(Settings.Instance.GeneralReplaysEnabled ? "ui.extras.replays.none" : "ui.extras.replays.disabled");
             }
             int? index = isActiveAndEnabled ? replays.IndexOf(replay) : null;
             SortReplays(index);
@@ -292,7 +294,7 @@ namespace NSMB.UI.MainMenu.Submenus.Replays {
         }
 
         public void RemoveReplayByPath(string path) {
-            RemoveReplay(replays.First(rle => rle.ReplayFile.FilePath == path));
+            RemoveReplay(replays.FirstOrDefault(rle => rle.ReplayFile.FilePath == path));
         }
 
         private async Awaitable FindReplays() {
