@@ -13,6 +13,9 @@
 
 #define DamageInvincibilityFrames 120
 
+import enum ActionFlags(int);
+import enum PlayerAction(int);
+
 input {
 	button Up;
 	button Down;
@@ -67,6 +70,13 @@ component MarioPlayer {
     [ExcludeFromPrototype] byte SlowTurnaroundFrames;
 	[ExcludeFromPrototype] int LastPushingFrame;
 	[ExcludeFromPrototype] byte StationaryFrames;
+
+	[ExcludeFromPrototype] ActionFlags ActionFlags;
+	[ExcludeFromPrototype] PlayerAction Action;
+	[ExcludeFromPrototype] PlayerAction PrevAction;
+	[ExcludeFromPrototype] int ActionTimer;
+	[ExcludeFromPrototype] int ActionState;
+	[ExcludeFromPrototype] int ActionArg;
 
 	// Jumping
 	[ExcludeFromPrototype] JumpState JumpState;

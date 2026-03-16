@@ -211,6 +211,21 @@ namespace Quantum {
             return maxArray.Length;
         }
 
+        public void SetAction(Frame f, EntityRef[] marioEntity, MarioPlayerPhysicsInfo physicsInfo, PlayerAction playerAction, int actionArg, VersusStageData stage = default) {
+            ActionSystem.actionList.TryGetValue(Action, out ActionBase prevActionData); // previous action
+            ActionSystem.actionList.TryGetValue(playerAction, out ActionBase actionData); // incoming action
+
+            prevActionData.OnExit(f, playerAction, physicsInfo, marioEntity, stage);
+            PrevAction = Action;
+
+            ActionFlags = actionData.DefaultFlags(f, marioEntity[0]);
+            ActionArg = actionArg;
+            ActionState = 0;
+            ActionTimer = 0;
+
+            actionData.OnEnter(f, physicsInfo, marioEntity, stage);
+        }
+
         public void SetReserveItem(Frame f, PowerupAsset newItem) {
             var currentItem = f.FindAsset(ReserveItem);
 
@@ -238,56 +253,6 @@ namespace Quantum {
             ReserveItem = newItem;
         }
 
-        public void Death(Frame f, EntityRef entity, bool fire, bool dropObjectives, EntityRef attacker) {
-            if (IsDead) {
-                return;
-            }
-
-            IsDead = true;
-            FireDeath = fire;
-            QuantumUtils.Decrement(ref Lives);
-            f.Unsafe.GetPointer<Interactable>(entity)->ColliderDisabled = true;
-            PreRespawnFrames = 180;
-            RespawnFrames = 78;
-            DeathAnimationFrames = 36;
-
-            if (dropObjectives) {
-                f.Signals.OnMarioPlayerDropObjective(entity, 1, attacker);
-            }
-
-            // OnSpinner = null;
-            DoEntityBounce = false;
-            CurrentPipe = EntityRef.None;
-            IsInShell = false;
-            IsPropellerFlying = false;
-            PropellerLaunchFrames = 0;
-            PropellerSpinFrames = 0;
-            IsSpinnerFlying = false;
-            IsDrilling = false;
-            IsSliding = false;
-            IsCrouching = false;
-            IsSkidding = false;
-            IsTurnaround = false;
-            IsGroundpounding = false;
-            CurrentKnockback = KnockbackStrength.None;
-            KnockbackGetupFrames = 0;
-            WallslideRight = false;
-            WallslideLeft = false;
-            ForceJumpTimer = 0;
-            
-            if (f.Unsafe.TryGetPointer(HeldEntity, out Holdable* holdable)) {
-                holdable->DropWithoutThrowing(f, HeldEntity);
-            }
-
-            var physicsObject = f.Unsafe.GetPointer<PhysicsObject>(entity);
-            physicsObject->IsFrozen = true;
-            physicsObject->DisableCollision = true;
-            physicsObject->CurrentData = default;
-
-            f.Signals.OnMarioPlayerDied(entity);
-            f.Events.MarioPlayerDied(entity, fire);
-        }
-
         public bool Powerdown(Frame f, EntityRef entity, bool ignoreInvincible, EntityRef attacker) {
             if (!ignoreInvincible && !IsDamageable) {
                 return false;
@@ -304,7 +269,7 @@ namespace Quantum {
             switch (CurrentPowerupState) {
             case PowerupState.MiniMushroom:
             case PowerupState.NoPowerup: {
-                Death(f, entity, false, true, attacker);
+                SetAction(f, new EntityRef[] {entity, attacker}, f.FindAsset(PhysicsAsset), PlayerAction.Dead, 0);
                 break;
             }
             case PowerupState.Mushroom: {
@@ -322,13 +287,6 @@ namespace Quantum {
                 break;
             }
             }
-
-            IsDrilling &= !IsPropellerFlying;
-            IsPropellerFlying = false;
-            IsInShell = false;
-            PropellerLaunchFrames = 0;
-            PropellerSpinFrames = 0;
-            UsedPropellerThisJump = false;
 
             if (!IsDead) {
                 DamageInvincibilityFrames = Constants.DamageInvincibilityFrames;
