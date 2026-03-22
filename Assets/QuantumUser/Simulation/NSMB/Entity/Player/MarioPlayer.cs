@@ -413,7 +413,7 @@ namespace Quantum {
             }
 
             if (IsInKnockback) {
-                ResetKnockback();
+                ResetKnockback(f, entity);
             }
 
             if (CurrentPowerupState == PowerupState.MiniMushroom && strength >= KnockbackStrength.Groundpound) {
@@ -485,6 +485,7 @@ namespace Quantum {
             WallslideLeft = WallslideRight = false;
             
             f.Signals.OnMarioPlayerDropObjective(entity, starsToDrop, attacker);
+            f.Events.MarioPlayerTookKnockback(entity, attacker, strength);
             return true;
         }
 
@@ -502,18 +503,19 @@ namespace Quantum {
             }
             if (IsInWeakKnockback || DoEntityBounce || physicsObject->IsUnderwater) {
                 // No getup frames
-                ResetKnockback();
+                ResetKnockback(f, entity);
             } else {
                 KnockbackGetupFrames = 25;
             }
         }
 
-        public void ResetKnockback() {
+        public void ResetKnockback(Frame f, EntityRef mario) {
             KnockbackGetupFrames = 0;
             DamageInvincibilityFrames = 90;
             CurrentKnockback = KnockbackStrength.None;
             IsInWeakKnockback = false;
             FacingRight = KnockbackWasOriginallyFacingRight;
+            f.Events.MarioPlayerKnockbackOver(mario);
         }
 
         public void EnterPipe(Frame f, EntityRef mario, EntityRef pipe) {

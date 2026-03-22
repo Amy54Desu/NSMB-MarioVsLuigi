@@ -1076,7 +1076,7 @@ namespace Quantum {
                 } else {
                     // In getup frames
                     if (QuantumUtils.Decrement(ref mario->KnockbackGetupFrames)) {
-                        mario->ResetKnockback();
+                        mario->ResetKnockback(f, entity);
                     }
                 }
 
@@ -1748,6 +1748,7 @@ namespace Quantum {
         private bool HandleStuckInBlock(Frame f, ref Filter filter, VersusStageData stage) {
             using var profilerScope = HostProfiler.Start("MarioPlayerSystem.HandleStuckInBlock");
             var mario = filter.MarioPlayer;
+            var entity = filter.Entity;
             var freezable = filter.Freezable;
 
             QuantumUtils.Decrement(ref mario->CrushDamageInvincibilityFrames);
@@ -1795,7 +1796,7 @@ namespace Quantum {
 
             mario->IsStuckInBlock = true;
             if (mario->CurrentKnockback != KnockbackStrength.None) {
-                mario->ResetKnockback();
+                mario->ResetKnockback(f, entity);
             }
             mario->IsGroundpounding = false;
             mario->IsPropellerFlying = false;

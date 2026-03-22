@@ -302,3 +302,15 @@ event PlayKnockbackEffect {
 	KnockbackStrength Strength;
 	nothashed FPVector2 AttackerPosition;
 }
+
+// these events are for external replay tools
+
+event MarioPlayerTookKnockback {
+	EntityRef Entity;
+	EntityRef Attacker;
+	KnockbackStrength Strength;
+}
+
+event MarioPlayerKnockbackOver {
+	EntityRef Entity;
+}
