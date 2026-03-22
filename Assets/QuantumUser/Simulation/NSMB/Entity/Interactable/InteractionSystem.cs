@@ -267,6 +267,10 @@ namespace Quantum {
                 return (obj.EntityA.GetHashCode() * 37) + (obj.EntityB.GetHashCode() * 37);
             }
 
+            public override int GetHashCode() {
+                return (EntityA.GetHashCode() * 37) + (EntityB.GetHashCode() * 37);
+            }
+
         }
 
         public class EntityRefPairComparer : IComparer<EntityRefPair> {

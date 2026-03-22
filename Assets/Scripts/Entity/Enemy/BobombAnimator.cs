@@ -128,8 +128,8 @@ namespace NSMB.Entities.Enemies {
                 return;
             }
 
-            sfx.clip = SoundEffect.Enemy_Bobomb_Fuse.GetClip();
-            sfx.Play();
+            //sfx.clip = SoundEffect.Enemy_Bobomb_Fuse.GetClip();
+            //sfx.Play();
 
             /*
             if (e.Stomped) {

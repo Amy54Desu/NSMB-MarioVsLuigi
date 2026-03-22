@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using UnityEngine;
+//using UnityEngine;
 
 public enum SoundEffect : byte {
     //CURRENT HIGHEST NUMBER: 114 (use 115 next)
@@ -145,30 +145,30 @@ public class SoundEffectDataAttribute : Attribute {
 public static partial class AttributeExtensions {
 
     private static readonly Dictionary<SoundEffect, SoundEffectDataAttribute> CachedDatas = new();
-    private static readonly Dictionary<string, AudioClip> CachedClips = new();
+    //private static readonly Dictionary<string, AudioClip> CachedClips = new();
 
-    public static AudioClip GetClip(this SoundEffect soundEffect, CharacterAsset player = null, int variant = 0) {
-        if (!CachedDatas.TryGetValue(soundEffect, out SoundEffectDataAttribute data)) {
+    public static void GetClip(this SoundEffect soundEffect, CharacterAsset player = null, int variant = 0) {
+        /*if (!CachedDatas.TryGetValue(soundEffect, out SoundEffectDataAttribute data)) {
             data = CachedDatas[soundEffect] = soundEffect.GetSoundData();
         }
 
-        return data.GetClip(player, variant);
+        return data.GetClip(player, variant);*/
     }
 
-    public static AudioClip GetClip(this SoundEffectDataAttribute data, CharacterAsset player = null, int variant = 0) {
-        string name = "Sound/" + data.Sound + (variant > 0 ? "_" + variant : "");
+    public static void GetClip(this SoundEffectDataAttribute data, CharacterAsset player = null, int variant = 0) {
+        //string name = "Sound/" + data.Sound + (variant > 0 ? "_" + variant : "");
 
-        if (player != null) {
-            name = name.Replace("{char}", player.SoundFolder);
-        }
+        //if (player != null) {
+        //    name = name.Replace("{char}", player.SoundFolder);
+        //}
 
-        if (CachedClips.TryGetValue(name, out AudioClip cachedClip)) {
-            return cachedClip;
-        }
+        //if (CachedClips.TryGetValue(name, out AudioClip cachedClip)) {
+        //    return cachedClip;
+        //}
 
-        AudioClip clip = Resources.Load(name) as AudioClip;
-        CachedClips[name] = clip;
-        return clip;
+        //AudioClip clip = Resources.Load(name) as AudioClip;
+        //CachedClips[name] = clip;
+        //return clip;
     }
 
     public static SoundEffectDataAttribute GetSoundData(this SoundEffect soundEffect) {
