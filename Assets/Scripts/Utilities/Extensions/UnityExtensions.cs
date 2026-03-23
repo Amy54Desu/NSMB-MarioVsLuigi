@@ -101,13 +101,13 @@ namespace NSMB.Utilities.Extensions {
         //easy sound clips
         public static void PlayOneShot(this AudioSource source, SoundEffect clip, CharacterAsset character = null, int variant = 0, float volume = 1f) {
             if (source.gameObject.activeInHierarchy) {
-                source.PlayOneShot(clip.GetClip(character, variant), volume);
+                //source.PlayOneShot(clip.GetClip(character, variant), volume);
             }
         }
 
         public static void PlayOneShot(this AudioSource source, SoundEffectDataAttribute data, CharacterAsset character = null, int variant = 0, float volume = 1f) {
             if (source.gameObject.activeInHierarchy) {
-                source.PlayOneShot(data.GetClip(character, variant), volume);
+                //source.PlayOneShot(data.GetClip(character, variant), volume);
             }
         }
 

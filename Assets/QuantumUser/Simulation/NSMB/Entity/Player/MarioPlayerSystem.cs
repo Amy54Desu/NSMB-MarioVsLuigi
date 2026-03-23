@@ -1962,7 +1962,7 @@ namespace Quantum {
             return true;
         }
 
-        public static void SpawnItem(Frame f, EntityRef marioEntity, MarioPlayer* mario, AssetRef<EntityPrototype> prefab, bool fromBlock) {
+        public static EntityRef SpawnItem(Frame f, EntityRef marioEntity, MarioPlayer* mario, AssetRef<EntityPrototype> prefab, bool fromBlock) {
             var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
             if (!prefab.IsValid) {
                 prefab = gamemode.GetRandomItem(f, mario, fromBlock).Prefab;
@@ -1972,6 +1972,7 @@ namespace Quantum {
             if (f.Unsafe.TryGetPointer(newEntity, out CoinItem* coinItem)) {
                 coinItem->ParentToPlayer(f, newEntity, marioEntity);
             }
+            return newEntity;
         }
 
         public void SpawnReserveItem(Frame f, ref Filter filter) {
