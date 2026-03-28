@@ -1,5 +1,7 @@
 using Photon.Deterministic;
+using Quantum.Collections;
 using Quantum.Physics2D;
+using System.Collections.Generic;
 
 namespace Quantum {
     public unsafe class BigStarSystem : SystemMainThread, ISignalOnReturnToRoom, ISignalOnMarioPlayerDropObjective {
@@ -67,7 +69,10 @@ namespace Quantum {
                     newStar->IsStationary = true;
                     newStarPhysicsObject->DisableCollision = true;
                     spawnedStar = true;
+                    f.Events.BigCollectableSpawned(f.Global->UsedStarSpawnCount, index, position, false);
                     break;
+                } else {
+                    f.Events.BigCollectableSpawned(f.Global->UsedStarSpawnCount, index, position, true);
                 }
             }
 
@@ -150,7 +155,7 @@ namespace Quantum {
             f.Signals.OnMarioPlayerCollectedStar(marioEntity);
             GameLogicSystem.CheckForGameEnd(f);
 
-            f.Events.MarioPlayerCollectedStar(marioEntity, *mario, f.Unsafe.GetPointer<Transform2D>(starEntity)->Position);
+            f.Events.MarioPlayerCollectedStar(marioEntity, *mario, f.Unsafe.GetPointer<Transform2D>(starEntity)->Position, starEntity);
             f.Events.CollectableDespawned(starEntity, f.Unsafe.GetPointer<Transform2D>(starEntity)->Position, true);
             f.Destroy(starEntity);
         }

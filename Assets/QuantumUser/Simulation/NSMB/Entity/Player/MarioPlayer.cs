@@ -158,6 +158,9 @@ namespace Quantum {
                 return;
             }
 
+            var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
+            int oldObjectiveCount = gamemode.GetObjectiveCount(f, f.Unsafe.GetPointer<MarioPlayer>(entity));
+
             IsDead = true;
             FireDeath = fire;
             f.Unsafe.GetPointer<Interactable>(entity)->ColliderDisabled = true;
@@ -219,7 +222,7 @@ namespace Quantum {
             physicsObject->CurrentData = default;
 
             f.Signals.OnMarioPlayerDied(entity);
-            f.Events.MarioPlayerDied(entity, fire);
+            f.Events.MarioPlayerDied(entity, fire, oldObjectiveCount, attacker);
         }
 
         public bool Powerdown(Frame f, EntityRef entity, bool ignoreInvincible, EntityRef attacker) {
@@ -232,6 +235,9 @@ namespace Quantum {
             if (!doDamage) {
                 return false;
             }
+
+            var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
+            int oldObjectiveCount = gamemode.GetObjectiveCount(f, f.Unsafe.GetPointer<MarioPlayer>(entity));
 
             PreviousPowerupState = CurrentPowerupState;
 
@@ -266,7 +272,7 @@ namespace Quantum {
 
             if (!IsDead) {
                 DamageInvincibilityFrames = 2 * 60;
-                f.Events.MarioPlayerTookDamage(entity);
+                f.Events.MarioPlayerTookDamage(entity, oldObjectiveCount, attacker);
             }
             return true;
         }
@@ -397,7 +403,7 @@ namespace Quantum {
             }
         }
 
-        public bool DoKnockback(Frame f, EntityRef entity, bool fromRight, int starsToDrop, KnockbackStrength strength, EntityRef attacker, bool bypassDamageInvincibility = false) {
+        public bool DoKnockback(Frame f, EntityRef entity, bool fromRight, int starsToDrop, KnockbackStrength strength, EntityRef attacker, bool bypassDamageInvincibility = false, ProjectileEffectType projectileEffectType = ProjectileEffectType.None, bool wasBlueShell = false) {
             var physicsObject = f.Unsafe.GetPointer<PhysicsObject>(entity);
             if (physicsObject->IsUnderwater) {
                 strength = KnockbackStrength.Normal;
@@ -425,6 +431,9 @@ namespace Quantum {
             if (IsInKnockback || IsInWeakKnockback) {
                 starsToDrop = Math.Min(1, starsToDrop);
             }
+
+            var gamemode = f.FindAsset(f.Global->Rules.Gamemode);
+            int oldObjectiveCount = gamemode.GetObjectiveCount(f, f.Unsafe.GetPointer<MarioPlayer>(entity));
 
             // Don't go into walls
             var transform = f.Unsafe.GetPointer<Transform2D>(entity);
@@ -485,7 +494,7 @@ namespace Quantum {
             WallslideLeft = WallslideRight = false;
             
             f.Signals.OnMarioPlayerDropObjective(entity, starsToDrop, attacker);
-            f.Events.MarioPlayerTookKnockback(entity, attacker, strength);
+            f.Events.MarioPlayerTookKnockback(entity, attacker, starsToDrop, oldObjectiveCount, strength, projectileEffectType, wasBlueShell);
             return true;
         }
 
