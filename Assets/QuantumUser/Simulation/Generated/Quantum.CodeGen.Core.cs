@@ -87,6 +87,7 @@ namespace Quantum {
     FireballBump,
     CollisionBump,
     Normal,
+    Medium,
     Groundpound,
   }
   public enum PowerupReserveResult : byte {
@@ -3686,6 +3687,22 @@ namespace Quantum {
         return result;
       }
     }
+    /// <summary>2.75</summary>
+    public static FP _2_75 {
+      [MethodImpl(MethodImplOptions.AggressiveInlining)] get { 
+        FP result;
+        result.RawValue = 180224;
+        return result;
+      }
+    }
+    /// <summary>11.25</summary>
+    public static FP _11_25 {
+      [MethodImpl(MethodImplOptions.AggressiveInlining)] get { 
+        FP result;
+        result.RawValue = 737280;
+        return result;
+      }
+    }
     /// <summary>0.05</summary>
     public static FP PhysicsRaycastSkin {
       [MethodImpl(MethodImplOptions.AggressiveInlining)] get { 
@@ -3792,6 +3809,10 @@ namespace Quantum {
       public const Int64 _8_25 = 540672;
       /// <summary>3.75</summary>
       public const Int64 _3_75 = 245760;
+      /// <summary>2.75</summary>
+      public const Int64 _2_75 = 180224;
+      /// <summary>11.25</summary>
+      public const Int64 _11_25 = 737280;
       /// <summary>0.05</summary>
       public const Int64 PhysicsRaycastSkin = 3277;
       /// <summary>0.005</summary>

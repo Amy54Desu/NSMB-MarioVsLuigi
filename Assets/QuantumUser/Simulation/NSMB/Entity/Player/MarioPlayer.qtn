@@ -10,6 +10,8 @@
 #define _0_075 0.075
 #define _8_25 8.25
 #define _3_75 3.75
+#define _2_75 2.75
+#define _11_25 11.25
 
 #define DamageInvincibilityFrames 120
 
@@ -145,6 +147,7 @@ enum KnockbackStrength : Byte {
 	FireballBump,
 	CollisionBump,
 	Normal,
+	Medium,
 	Groundpound,
 }
 

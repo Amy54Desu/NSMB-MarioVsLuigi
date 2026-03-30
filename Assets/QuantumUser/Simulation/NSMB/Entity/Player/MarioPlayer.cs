@@ -438,12 +438,6 @@ namespace Quantum {
                 ResetKnockback(f, entity);
             }
 
-            if (CurrentPowerupState == PowerupState.MiniMushroom && strength >= KnockbackStrength.Groundpound) {
-                f.Signals.OnMarioPlayerDropObjective(entity, starsToDrop - 1, attacker);
-                Powerdown(f, entity, false, attacker);
-                return true;
-            }
-
             if (IsInKnockback || IsInWeakKnockback) {
                 starsToDrop = Math.Min(1, starsToDrop);
             }
@@ -465,6 +459,7 @@ namespace Quantum {
                 KnockbackStrength.Groundpound => new(Constants._8_25 / 2, Constants._3_50),
                 KnockbackStrength.FireballBump => new(Constants._3_75 / 2, 0),
                 KnockbackStrength.CollisionBump => new(Constants._2_50, Constants._3_50),
+                KnockbackStrength.Medium => new(Constants._2_75, Constants._3_50),
                 KnockbackStrength.Normal or _ => new(Constants._3_75 / 2, Constants._3_50),
             };
             if (CurrentKnockback == KnockbackStrength.CollisionBump) {
@@ -519,11 +514,32 @@ namespace Quantum {
             return true;
         }
 
+        private readonly static KnockbackStrength[] WeakKnockbacks = new KnockbackStrength[] { KnockbackStrength.FireballBump, KnockbackStrength.CollisionBump };
+
         private static bool IsImmuneFromKnockbackStrength(KnockbackStrength currentStrength, KnockbackStrength newStrength) {
-            return currentStrength == newStrength
-                || (currentStrength == KnockbackStrength.Groundpound && newStrength == KnockbackStrength.Normal)
-                || (currentStrength == KnockbackStrength.Normal && newStrength == KnockbackStrength.Groundpound)
-                || (currentStrength == KnockbackStrength.FireballBump && newStrength == KnockbackStrength.CollisionBump);
+            if (currentStrength == KnockbackStrength.None) {
+                return false;
+            }
+
+            // Don't allow combos of the same strength type.
+            if (currentStrength == newStrength) {
+                return true;
+            }
+
+            // Don't allow CollisionBump after FireballBump
+            if (currentStrength == KnockbackStrength.FireballBump && newStrength == KnockbackStrength.CollisionBump) {
+                return true;
+            }
+
+            bool isCurrentStrong = Array.IndexOf(WeakKnockbacks, currentStrength) == -1;
+            bool isNewStrong = Array.IndexOf(WeakKnockbacks, newStrength) == -1;
+
+            // Don't allow a strong hit to combo with another strong hit 
+            if (isCurrentStrong && isNewStrong) {
+                return true;
+            }
+
+            return false;
         }
 
         public void GetupKnockback(Frame f, EntityRef entity) {
