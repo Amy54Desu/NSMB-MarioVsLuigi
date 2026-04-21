@@ -20,14 +20,17 @@ MonoBehaviour:
     Id:
       Value: 1502268950446962426
   SpawnChance:
-    RawValue: 16384
+    RawValue: 327680000
   AboveAverageBonus:
     RawValue: -8192
   BelowAverageBonus:
     RawValue: 163840
   BlockSpawnSoundEffect: 69
   Flags: 19
-  MaxNumberOfItems: 0
+  MatchStartWait: 25
+  MaxItemsPerCooldown: 3
+  MaxNumberOfItems: 5
+  Cooldown: 20
   CameraSpawnOffset:
     X:
       RawValue: 0

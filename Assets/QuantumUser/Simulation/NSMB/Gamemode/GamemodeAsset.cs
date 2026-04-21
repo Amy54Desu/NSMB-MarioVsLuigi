@@ -92,6 +92,16 @@ namespace Quantum {
                 FP chance = GetItemSpawnWeight(f, coinItem, ourObjectiveCount);
 
                 if (rand < chance) {
+                    // set the cooldown
+                    if (coinItem.Cooldown > 0) {
+                        var dictionary = f.ResolveDictionary(f.Global->CoinItemCooldowns);
+                        dictionary.TryGetValue(coinItem, out var info);
+                        if (info.ResetFrameTimer <= 0) {
+                            info.ResetFrameTimer = (ushort)(coinItem.Cooldown * 60);
+                        }
+                        info.ItemsSpawned++;
+                        dictionary[coinItem] = info;
+                    }
                     return coinItem;
                 }
 

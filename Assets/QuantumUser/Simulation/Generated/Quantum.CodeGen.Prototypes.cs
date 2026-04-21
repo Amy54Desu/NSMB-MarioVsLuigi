@@ -286,6 +286,18 @@ namespace Quantum.Prototypes {
     }
   }
   [System.SerializableAttribute()]
+  [Quantum.Prototypes.Prototype(typeof(Quantum.CoinItemCooldownInfo))]
+  public unsafe partial class CoinItemCooldownInfoPrototype : StructPrototype {
+    public Byte ItemsSpawned;
+    public UInt16 ResetFrameTimer;
+    partial void MaterializeUser(Frame frame, ref Quantum.CoinItemCooldownInfo result, in PrototypeMaterializationContext context);
+    public void Materialize(Frame frame, ref Quantum.CoinItemCooldownInfo result, in PrototypeMaterializationContext context = default) {
+        result.ItemsSpawned = this.ItemsSpawned;
+        result.ResetFrameTimer = this.ResetFrameTimer;
+        MaterializeUser(frame, ref result, in context);
+    }
+  }
+  [System.SerializableAttribute()]
   [Quantum.Prototypes.Prototype(typeof(Quantum.CoinRunnersData))]
   public unsafe partial class CoinRunnersDataPrototype : StructPrototype {
     public Int32 ObjectiveCoins;

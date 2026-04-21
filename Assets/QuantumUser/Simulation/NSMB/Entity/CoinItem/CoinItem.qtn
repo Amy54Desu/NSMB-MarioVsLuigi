@@ -1,3 +1,12 @@
+global {
+	[AllocateOnComponentAdded] dictionary<AssetRef<CoinItemAsset>, CoinItemCooldownInfo> CoinItemCooldowns;
+}
+
+struct CoinItemCooldownInfo {
+	byte ItemsSpawned;
+	ushort ResetFrameTimer;
+}
+
 component CoinItem {
 	AssetRef<CoinItemAsset> Scriptable;
 	ushort Lifetime;

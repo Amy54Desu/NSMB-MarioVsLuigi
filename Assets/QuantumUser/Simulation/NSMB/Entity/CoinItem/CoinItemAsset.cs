@@ -8,7 +8,8 @@ public unsafe class CoinItemAsset : AssetObject {
     public FP SpawnChance = FP._0_10, AboveAverageBonus = 0, BelowAverageBonus = 0;
     public SoundEffect BlockSpawnSoundEffect = SoundEffect.World_Block_Powerup;
     public TypeFlags Flags = TypeFlags.SpawnableFromCoins | TypeFlags.SpawnableFromRouletteBlock | TypeFlags.LaunchableFromBlock;
-    public int MaxNumberOfItems = 0;
+    public int MatchStartWait = 0, MaxItemsPerCooldown = 0, MaxNumberOfItems = 0;
+    public ushort Cooldown = 0;
 
     public FPVector2 CameraSpawnOffset = new(0, FP.FromString("1.68"));
 
@@ -103,6 +104,15 @@ public unsafe class CoinItemAsset : AssetObject {
             return false;
         }
         if (MaxNumberOfItems > 0 && CountItemsExisting(f) >= MaxNumberOfItems) {
+            return false;
+        }
+        var secondsPassed = (f.Number - f.Global->StartFrame) * f.DeltaTime;
+        if (MatchStartWait > 0 && secondsPassed < MatchStartWait) {
+            return false;
+        }
+        var cooldowns = f.ResolveDictionary(f.Global->CoinItemCooldowns);
+        cooldowns.TryGetValue(this, out var cooldown);
+        if (Cooldown > 0 && cooldown.ItemsSpawned >= MaxItemsPerCooldown) {
             return false;
         }
         return true;

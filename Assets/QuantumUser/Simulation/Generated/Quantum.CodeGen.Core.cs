@@ -974,6 +974,28 @@ namespace Quantum {
     }
   }
   [StructLayout(LayoutKind.Explicit)]
+  public unsafe partial struct CoinItemCooldownInfo {
+    public const Int32 SIZE = 4;
+    public const Int32 ALIGNMENT = 2;
+    [FieldOffset(0)]
+    public Byte ItemsSpawned;
+    [FieldOffset(2)]
+    public UInt16 ResetFrameTimer;
+    public override readonly Int32 GetHashCode() {
+      unchecked { 
+        var hash = 6917;
+        hash = hash * 31 + ItemsSpawned.GetHashCode();
+        hash = hash * 31 + ResetFrameTimer.GetHashCode();
+        return hash;
+      }
+    }
+    public static void Serialize(void* ptr, FrameSerializer serializer) {
+        var p = (CoinItemCooldownInfo*)ptr;
+        serializer.Stream.Serialize(&p->ItemsSpawned);
+        serializer.Stream.Serialize(&p->ResetFrameTimer);
+    }
+  }
+  [StructLayout(LayoutKind.Explicit)]
   public unsafe partial struct CoinRunnersData {
     public const Int32 SIZE = 4;
     public const Int32 ALIGNMENT = 4;
@@ -1311,6 +1333,9 @@ namespace Quantum {
     public EntityRef MainBigStar;
     [FieldOffset(1864)]
     public BitSet64 UsedStarSpawns;
+    [FieldOffset(1852)]
+    [AllocateOnComponentAdded()]
+    public QDictionaryPtr<AssetRef<CoinItemAsset>, CoinItemCooldownInfo> CoinItemCooldowns;
     [FieldOffset(1888)]
     public GameRules Rules;
     [FieldOffset(1818)]
@@ -1340,10 +1365,10 @@ namespace Quantum {
     public QBoolean HasWinner;
     [FieldOffset(1844)]
     public PlayerRef Host;
-    [FieldOffset(1852)]
+    [FieldOffset(1856)]
     [AllocateOnComponentAdded()]
     public QDictionaryPtr<PlayerRef, EntityRef> PlayerDatas;
-    [FieldOffset(1856)]
+    [FieldOffset(1860)]
     [AllocateOnComponentAdded()]
     public QListPtr<BannedPlayerInfo> BannedPlayerIds;
     [FieldOffset(1880)]
@@ -1376,6 +1401,7 @@ namespace Quantum {
         hash = hash * 31 + BigStarSpawnTimer.GetHashCode();
         hash = hash * 31 + MainBigStar.GetHashCode();
         hash = hash * 31 + UsedStarSpawns.GetHashCode();
+        hash = hash * 31 + CoinItemCooldowns.GetHashCode();
         hash = hash * 31 + Rules.GetHashCode();
         hash = hash * 31 + (Byte)GameState;
         hash = hash * 31 + StartFrame.GetHashCode();
@@ -1397,10 +1423,12 @@ namespace Quantum {
       }
     }
     partial void ClearPointersPartial(FrameBase f, EntityRef entity) {
+      CoinItemCooldowns = default;
       PlayerDatas = default;
       BannedPlayerIds = default;
     }
     partial void AllocatePointersPartial(FrameBase f, EntityRef entity) {
+      f.TryAllocateDictionary(ref CoinItemCooldowns);
       f.TryAllocateDictionary(ref PlayerDatas);
       f.TryAllocateList(ref BannedPlayerIds);
     }
@@ -1431,6 +1459,7 @@ namespace Quantum {
         serializer.Stream.Serialize(&p->WinningTeam);
         PlayerRef.Serialize(&p->Host, serializer);
         QBoolean.Serialize(&p->HasWinner, serializer);
+        QDictionary.Serialize(&p->CoinItemCooldowns, serializer, Statics.SerializeAssetRef, Statics.SerializeCoinItemCooldownInfo);
         QDictionary.Serialize(&p->PlayerDatas, serializer, Statics.SerializePlayerRef, Statics.SerializeEntityRef);
         QList.Serialize(&p->BannedPlayerIds, serializer, Statics.SerializeBannedPlayerInfo);
         Quantum.BitSet64.Serialize(&p->UsedStarSpawns, serializer);
@@ -4375,6 +4404,8 @@ namespace Quantum {
     public static FrameSerializer.Delegate SerializePhysicsQueryRef;
     public static FrameSerializer.Delegate SerializePhysicsContact;
     public static FrameSerializer.Delegate SerializeBannedPlayerInfo;
+    public static FrameSerializer.Delegate SerializeAssetRef;
+    public static FrameSerializer.Delegate SerializeCoinItemCooldownInfo;
     public static FrameSerializer.Delegate SerializePlayerRef;
     public static FrameSerializer.Delegate SerializePlayerInformation;
     public static FrameSerializer.Delegate SerializeInput;
@@ -4384,6 +4415,8 @@ namespace Quantum {
       SerializePhysicsQueryRef = PhysicsQueryRef.Serialize;
       SerializePhysicsContact = Quantum.PhysicsContact.Serialize;
       SerializeBannedPlayerInfo = Quantum.BannedPlayerInfo.Serialize;
+      SerializeAssetRef = AssetRef.Serialize;
+      SerializeCoinItemCooldownInfo = Quantum.CoinItemCooldownInfo.Serialize;
       SerializePlayerRef = PlayerRef.Serialize;
       SerializePlayerInformation = Quantum.PlayerInformation.Serialize;
       SerializeInput = Quantum.Input.Serialize;
@@ -4417,6 +4450,7 @@ namespace Quantum {
       typeRegistry.Register(typeof(CharacterController3D), CharacterController3D.SIZE);
       typeRegistry.Register(typeof(Quantum.Coin), Quantum.Coin.SIZE);
       typeRegistry.Register(typeof(Quantum.CoinItem), Quantum.CoinItem.SIZE);
+      typeRegistry.Register(typeof(Quantum.CoinItemCooldownInfo), Quantum.CoinItemCooldownInfo.SIZE);
       typeRegistry.Register(typeof(Quantum.CoinRunnersData), Quantum.CoinRunnersData.SIZE);
       typeRegistry.Register(typeof(Quantum.CoinType), 1);
       typeRegistry.Register(typeof(ColorRGBA), ColorRGBA.SIZE);

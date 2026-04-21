@@ -27,7 +27,10 @@ MonoBehaviour:
     RawValue: 311296
   BlockSpawnSoundEffect: 99
   Flags: 3
+  MatchStartWait: 0
+  MaxItemsPerCooldown: 0
   MaxNumberOfItems: 0
+  Cooldown: 0
   CameraSpawnOffset:
     X:
       RawValue: 0
