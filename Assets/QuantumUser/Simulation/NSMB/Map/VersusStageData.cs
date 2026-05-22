@@ -50,6 +50,9 @@ public unsafe class VersusStageData : AssetObject, ISoundOverrideProvider {
     [Header("-- Coin Items")]
     public List<AssetRef<CoinItemAsset>> BannedCoinItems;
 
+    [Header("-- Chaos Effects")]
+    public List<AssetRef<ChaosEffectBase>> BannedChaosEffects;
+
     [Header("---Sound Overrides")]
     public SoundEffectOverride[] SfxOverrides;
 
