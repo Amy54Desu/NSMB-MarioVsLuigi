@@ -12,6 +12,7 @@ namespace Quantum {
         public AssetRef<CoinItemAsset>[] AllCoinItems;
         public AssetRef<CoinItemAsset> FallbackCoinItem;
         public AssetRef<EntityPrototype> LooseCoinPrototype;
+        public AssetRef<ChaosEffectBase>[] AllChaosEffects;
         public int Order;
 
         public GameRulesPrototype DefaultRules;
@@ -113,6 +114,38 @@ namespace Quantum {
             }
 
             return f.FindAsset(FallbackCoinItem);
+        }
+
+        public virtual ChaosEffectBase GetRandomChaos(Frame f) {
+            var stage = f.FindAsset<VersusStageData>(f.Map.UserAsset);
+
+            FP totalChance = 0;
+            foreach (AssetRef<ChaosEffectBase> chaosAsset in AllChaosEffects) {
+                ChaosEffectBase chaos = f.FindAsset(chaosAsset);
+                if (!chaos.CanEffectPlay(f)) {
+                    continue;
+                }
+
+                totalChance += chaos.EffectWeight;
+            }
+
+            FP rand = f.RNG->Next(0, totalChance);
+            foreach (AssetRef<ChaosEffectBase> chaosAsset in AllChaosEffects) {
+                ChaosEffectBase chaos = f.FindAsset(chaosAsset);
+                if (!chaos.CanEffectPlay(f)) {
+                    continue;
+                }
+
+                FP chance = chaos.EffectWeight;
+
+                if (rand < chance) {
+                    return chaos;
+                }
+
+                rand -= chance;
+            }
+
+            return null;
         }
 
         public abstract FP GetItemSpawnWeight(Frame f, CoinItemAsset item, int ourObjectiveCount);

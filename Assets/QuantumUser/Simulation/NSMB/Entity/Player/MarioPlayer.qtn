@@ -64,6 +64,7 @@ component MarioPlayer {
 	[ExcludeFromPrototype] GamemodeSpecificData GamemodeData;
 	[ExcludeFromPrototype] byte Coins;
 	[ExcludeFromPrototype] byte Lives;
+	[ExcludeFromPrototype,AllocateOnComponentAdded,FreeOnComponentRemoved] list<AssetRef<ChaosEffectBase>> ActiveChaosEffects;
 
 	[ExcludeFromPrototype] bool Disconnected;
 	[ExcludeFromPrototype] bool IsDead;
