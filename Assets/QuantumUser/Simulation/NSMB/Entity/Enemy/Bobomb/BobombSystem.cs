@@ -196,7 +196,7 @@ namespace Quantum {
             } else {
                 if (attackedFromAbove) {
                     // Light
-                    bool mini = mario->CurrentPowerupState == PowerupState.MiniMushroom;
+                    bool mini = mario->CurrentPowerupState == PowerupState.MiniMushroom && !f.Exists(mario->HeldEntity);
                     if (!mini || mario->IsGroundpoundActive) {
                         Light(f, bobombEntity, bobomb, mini || !mario->IsGroundpoundActive);
                     }

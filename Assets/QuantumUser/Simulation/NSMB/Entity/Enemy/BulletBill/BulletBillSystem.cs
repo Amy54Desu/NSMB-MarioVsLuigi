@@ -81,7 +81,7 @@ namespace Quantum
             }
 
             if (attackedFromAbove) {
-                if (mario->CurrentPowerupState == PowerupState.MiniMushroom) {
+                if (mario->CurrentPowerupState == PowerupState.MiniMushroom && !f.Exists(mario->HeldEntity)) {
                     if (mario->IsGroundpounding) {
                         mario->IsGroundpounding = false;
                         bulletBill->Kill(f, bulletBillEntity, marioEntity, EnemyKillReason.Normal);

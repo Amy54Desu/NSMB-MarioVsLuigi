@@ -78,7 +78,7 @@ namespace Quantum {
             }
 
             if (attackedFromAbove) {
-                if (mario->CurrentPowerupState == PowerupState.MiniMushroom) {
+                if (mario->CurrentPowerupState == PowerupState.MiniMushroom && !f.Exists(mario->HeldEntity)) {
                     if (mario->IsGroundpounding) {
                         mario->IsGroundpounding = false;
                         goomba->Kill(f, goombaEntity, marioEntity, EnemyKillReason.Normal);
@@ -96,7 +96,11 @@ namespace Quantum {
                 goombaEnemy->ChangeFacingRight(f, goombaEntity, ourPos.X > theirPos.X);
 
             } else if (mario->IsDamageable && goombaEnemy->IntangibilityFrames == 0) {
-                mario->Powerdown(f, marioEntity, false, goombaEntity);
+                if (mario->CurrentPowerupState == PowerupState.MiniMushroom) {
+                    IceBlockSystem.Freeze(f, goombaEntity);
+                } else {
+                    mario->Powerdown(f, marioEntity, false, goombaEntity);
+                }
                 goombaEnemy->ChangeFacingRight(f, goombaEntity, damageDirection.X > 0);
             }
         }

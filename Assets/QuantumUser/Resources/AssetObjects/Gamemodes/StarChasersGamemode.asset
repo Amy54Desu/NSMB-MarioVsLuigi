@@ -23,29 +23,14 @@ MonoBehaviour:
   ObjectiveSymbolPrefix: S
   AllCoinItems:
   - Id:
-      Value: 481353246829238635
-  - Id:
-      Value: 390055422968795145
-  - Id:
-      Value: 296548766860541996
-  - Id:
-      Value: 279725308049324760
-  - Id:
-      Value: 372382251364764784
-  - Id:
-      Value: 328877894917160747
-  - Id:
-      Value: 402398838204577684
-  - Id:
       Value: 315844579913471239
-  - Id:
-      Value: 378514462062875007
   FallbackCoinItem:
     Id:
       Value: 390055422968795145
   LooseCoinPrototype:
     Id:
       Value: 1464681621458001613
+  Order: 0
   DefaultRules:
     Stage:
       Id:

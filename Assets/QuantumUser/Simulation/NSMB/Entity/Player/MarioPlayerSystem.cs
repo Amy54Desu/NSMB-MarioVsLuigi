@@ -495,7 +495,10 @@ namespace Quantum {
             FP alpha = FPMath.Clamp01(FPMath.Abs(physicsObject->Velocity.X) - physics.WalkMaxVelocity[1] + (physics.WalkMaxVelocity[1] * FP._0_50));
             FP newY = effectiveState switch {
                 PowerupState.MegaMushroom => physics.JumpMegaVelocity + FPMath.Lerp(0, physics.JumpMegaSpeedBonusVelocity, alpha),
-                PowerupState.MiniMushroom => physics.JumpMiniVelocity + FPMath.Lerp(0, physics.JumpMiniSpeedBonusVelocity, alpha),
+                PowerupState.MiniMushroom =>
+                     f.Exists(mario->HeldEntity)
+                     ? physics.JumpVelocity + FPMath.Lerp(0, physics.JumpSpeedBonusVelocity, alpha)
+                     : physics.JumpMiniVelocity + FPMath.Lerp(0, physics.JumpMiniSpeedBonusVelocity, alpha),
                 _ => physics.JumpVelocity + FPMath.Lerp(0, physics.JumpSpeedBonusVelocity, alpha),
             };
             if (FPMath.Sign(physicsObject->Velocity.X) != 0 && FPMath.Sign(physicsObject->Velocity.X) != FPMath.Sign(physicsObject->FloorAngle)) {
@@ -559,7 +562,7 @@ namespace Quantum {
             } else {
                 int stage = mario->GetGravityStage(physicsObject, physics);
                 bool mega = mario->CurrentPowerupState == PowerupState.MegaMushroom;
-                bool mini = mario->CurrentPowerupState == PowerupState.MiniMushroom;
+                bool mini = mario->CurrentPowerupState == PowerupState.MiniMushroom && !f.Exists(mario->HeldEntity);
 
 
                 FP[] accArr = swimming ? physics.GravitySwimmingAcceleration : (mega ? physics.GravityMegaAcceleration : (mini ? physics.GravityMiniAcceleration : physics.GravityAcceleration));
@@ -631,7 +634,7 @@ namespace Quantum {
                 physicsObject->Velocity.X = 0;
             } else {
                 FP terminalVelocityModifier = mario->CurrentPowerupState switch {
-                    PowerupState.MiniMushroom => physics.TerminalVelocityMiniMultiplier,
+                    PowerupState.MiniMushroom => f.Exists(mario->HeldEntity) ? 1 : physics.TerminalVelocityMiniMultiplier,
                     PowerupState.MegaMushroom => physics.TerminalVelocityMegaMultiplier,
                     _ => 1,
                 };
@@ -2540,7 +2543,7 @@ namespace Quantum {
             attackerMario->DoEntityBounce = defenderMario->CurrentPowerupState != PowerupState.MiniMushroom && !attackerMario->IsGroundpounding && !attackerMario->IsDrilling;
             bool groundpounded = attackerMario->IsGroundpoundActive || attackerMario->IsDrilling;
 
-            if (attackerMario->CurrentPowerupState == PowerupState.MiniMushroom && defenderMario->CurrentPowerupState != PowerupState.MiniMushroom) {
+            if (attackerMario->CurrentPowerupState == PowerupState.MiniMushroom && !f.Exists(attackerMario->HeldEntity) && defenderMario->CurrentPowerupState != PowerupState.MiniMushroom) {
                 // Attacker is mini, they arent. special rules.
                 if (groundpounded) {
                     bool dealtKnockback = defenderMario->DoKnockback(f, defender, !fromRight, dropStars ? 3 : 0, KnockbackStrength.Groundpound, attacker);

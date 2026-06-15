@@ -325,7 +325,7 @@ namespace Quantum {
                 // Moving (either in shell, or walking)
                 if (attackedFromAbove) {
                     // drop a powerUP if it has one, otherwise enter shell
-                    if (mario->CurrentPowerupState != PowerupState.MiniMushroom || mario->IsGroundpoundActive) {
+                    if (mario->CurrentPowerupState != PowerupState.MiniMushroom || f.Exists(mario->HeldEntity) || mario->IsGroundpoundActive) {
                         if (!koopa->IsKicked && koopa->SpawnPowerupWhenStomped.IsValid) {
                             PowerupAsset powerupAsset = f.FindAsset(koopa->SpawnPowerupWhenStomped);
                             EntityRef newPowerup = f.Create(powerupAsset.Prefab);

@@ -158,7 +158,7 @@ namespace Quantum {
             }
 
             return (input.Sprint.IsDown || forceHold || (f.Exists(HeldEntity) && !f.IsPlayerVerifiedOrLocal(PlayerRef)))
-                && !freezable->IsFrozen(f) && CurrentPowerupState is not PowerupState.MiniMushroom or PowerupState.MegaMushroom && !IsSkidding 
+                && !freezable->IsFrozen(f) && (CurrentPowerupState != PowerupState.MiniMushroom || holdable->HoldAboveHead) && CurrentPowerupState is not PowerupState.MegaMushroom && !IsSkidding 
                 && !IsInKnockback && KnockbackGetupFrames == 0 && !IsTurnaround && !IsPropellerFlying && !IsSpinnerFlying && !IsCrouching && !IsDead
                 && !IsInShell && !WallslideLeft && !WallslideRight && (f.Exists(item) || physicsObject->IsTouchingGround || JumpState < JumpState.DoubleJump)
                 && !IsGroundpounding && !(!f.Exists(item) && physicsObject->IsUnderwater && input.Jump.IsDown)
@@ -459,7 +459,7 @@ namespace Quantum {
                 knockbackVelocity = FPVector2.Zero;
             }
             knockbackVelocity.X *= fromRight ? -1 : 1;
-            if (CurrentPowerupState == PowerupState.MiniMushroom) {
+            if (CurrentPowerupState == PowerupState.MiniMushroom && !f.Exists(HeldEntity)) {
                 var physics = f.FindAsset(PhysicsAsset);
                 knockbackVelocity.X *= physics.KnockbackMiniMultiplier.X;
                 knockbackVelocity.Y *= physics.KnockbackMiniMultiplier.Y;
