@@ -51,18 +51,14 @@ namespace NSMB.UI.Game {
         }
 
         public void Start() {
-            QuantumEvent.Subscribe<EventMarioPlayerCollectedStar>(this, OnMarioPlayerCollectedStar);
-            QuantumEvent.Subscribe<EventMarioPlayerDroppedStar>(this, OnMarioPlayerDroppedStar);
-            QuantumEvent.Subscribe<EventMarioPlayerObjectiveCoinsChanged>(this, OnMarioPlayerObjectiveCoinsChanged);
-            QuantumEvent.Subscribe<EventMarioPlayerDied>(this, OnMarioPlayerDied);
-            QuantumEvent.Subscribe<EventMarioPlayerPreRespawned>(this, OnMarioPlayerPreRespawned);
             QuantumEvent.Subscribe<EventPlayerRemoved>(this, OnPlayerRemoved);
             QuantumCallback.Subscribe<CallbackGameResynced>(this, OnGameResynced);
+            QuantumCallback.Subscribe<CallbackUpdateView>(this, e => UpdateText(e.Game.Frames.Predicted));
 
-            var game = QuantumRunner.DefaultGame;
+            /*var game = QuantumRunner.DefaultGame;
             if (game != null) {
                 UpdateText(game.Frames.Predicted);
-            }
+            }*/
         }
 
         public void OnDestroy() {
@@ -82,7 +78,7 @@ namespace NSMB.UI.Game {
             }
 
             bool shouldBeInactive = f.Global->GameState < GameState.Playing
-                || elements.Entity == Entity
+                //|| elements.Entity == Entity
                 || mario->IsRespawning
                 || (mario->IsDead && parent.IsBelowDeathplane);
 
@@ -132,6 +128,12 @@ namespace NSMB.UI.Game {
                     stringBuilder.Append(Utils.GetPlayerIcon(f, mario->PlayerRef));
                 }
             }
+            bool isActionable = mario->TauntFrames == 0 && !mario->IsInKnockback;
+            if (mario->TauntFrames ==  0) {
+                stringBuilder.AppendLine((isActionable ? "<color=\"green\"> Actionable" : "<color=\"red\"> Inactionable") + "</color>");
+            } else {
+                stringBuilder.AppendLine((isActionable ? "<color=\"green\"> Actionable" : "<color=\"red\"> Inactionable ("+mario->TauntFrames+"F)") + "</color>");
+            }
             stringBuilder.AppendLine(cachedNickname);
 
             if (f.Global->Rules.IsLivesEnabled) {
@@ -149,46 +151,6 @@ namespace NSMB.UI.Game {
                 cachedNickname = runtimePlayer.PlayerNickname.ToValidNickname(f, mario->PlayerRef);
                 nicknameColor = NicknameColor.Parse(runtimePlayer.NicknameColor);
             }
-        }
-
-        private void OnMarioPlayerDied(EventMarioPlayerDied e) {
-            if (e.Entity != Entity) {
-                return;
-            }
-
-            UpdateText(e.Game.Frames.Predicted);
-        }
-
-        private void OnMarioPlayerCollectedStar(EventMarioPlayerCollectedStar e) {
-            if (e.Entity != Entity) {
-                return;
-            }
-
-            UpdateText(e.Game.Frames.Predicted);
-        }
-
-        private void OnMarioPlayerObjectiveCoinsChanged(EventMarioPlayerObjectiveCoinsChanged e) {
-            if (e.Entity != Entity) {
-                return;
-            }
-
-            UpdateText(e.Game.Frames.Predicted);
-        }
-
-        private void OnMarioPlayerDroppedStar(EventMarioPlayerDroppedStar e) {
-            if (e.Entity != Entity) {
-                return;
-            }
-
-            UpdateText(e.Game.Frames.Predicted);
-        }
-
-        private void OnMarioPlayerPreRespawned(EventMarioPlayerPreRespawned e) {
-            if (e.Entity != Entity) {
-                return;
-            }
-
-            UpdateText(e.Game.Frames.Predicted);
         }
 
         private void OnGameResynced(CallbackGameResynced e) {
