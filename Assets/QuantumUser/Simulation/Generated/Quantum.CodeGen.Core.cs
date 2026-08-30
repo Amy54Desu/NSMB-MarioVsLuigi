@@ -983,6 +983,36 @@ namespace Quantum {
     }
   }
   [StructLayout(LayoutKind.Explicit)]
+  public unsafe partial struct ChaosEffect {
+    public const Int32 SIZE = 24;
+    public const Int32 ALIGNMENT = 8;
+    [FieldOffset(8)]
+    public AssetRef<ChaosEffectBase> ChaosEffectBase;
+    [FieldOffset(0)]
+    public Int32 EffectVariation;
+    [FieldOffset(16)]
+    public FP RemainingTime;
+    [FieldOffset(4)]
+    public Int32 RemainingResets;
+    public override readonly Int32 GetHashCode() {
+      unchecked { 
+        var hash = 9349;
+        hash = hash * 31 + ChaosEffectBase.GetHashCode();
+        hash = hash * 31 + EffectVariation.GetHashCode();
+        hash = hash * 31 + RemainingTime.GetHashCode();
+        hash = hash * 31 + RemainingResets.GetHashCode();
+        return hash;
+      }
+    }
+    public static void Serialize(void* ptr, FrameSerializer serializer) {
+        var p = (ChaosEffect*)ptr;
+        serializer.Stream.Serialize(&p->EffectVariation);
+        serializer.Stream.Serialize(&p->RemainingResets);
+        AssetRef.Serialize(&p->ChaosEffectBase, serializer);
+        FP.Serialize(&p->RemainingTime, serializer);
+    }
+  }
+  [StructLayout(LayoutKind.Explicit)]
   public unsafe partial struct CoinRunnersData {
     public const Int32 SIZE = 4;
     public const Int32 ALIGNMENT = 4;
@@ -1353,7 +1383,7 @@ namespace Quantum {
   }
   [StructLayout(LayoutKind.Explicit)]
   public unsafe partial struct _globals_ {
-    public const Int32 SIZE = 3168;
+    public const Int32 SIZE = 3176;
     public const Int32 ALIGNMENT = 8;
     [FieldOffset(0)]
     public AssetRef<Map> Map;
@@ -1382,11 +1412,17 @@ namespace Quantum {
     public BitSet10 PlayerLastConnectionState;
     [FieldOffset(1824)]
     public UInt16 BigStarSpawnTimer;
-    [FieldOffset(1880)]
+    [FieldOffset(1888)]
     public EntityRef MainBigStar;
-    [FieldOffset(1872)]
+    [FieldOffset(1880)]
     public BitSet64 UsedStarSpawns;
-    [FieldOffset(1896)]
+    [FieldOffset(1828)]
+    public UInt16 NextChaosEffectTimer;
+    [FieldOffset(1864)]
+    [AllocateOnComponentAdded()]
+    [FreeOnComponentRemoved()]
+    public QListPtr<AssetRef<ChaosEffectBase>> ActiveChaosEffects;
+    [FieldOffset(1904)]
     public GameRules Rules;
     [FieldOffset(1818)]
     public GameState GameState;
@@ -1398,20 +1434,20 @@ namespace Quantum {
     public QBoolean IsStartGameCountdownActive;
     [FieldOffset(1826)]
     public UInt16 GameStartFrames;
-    [FieldOffset(1828)]
+    [FieldOffset(1830)]
     public UInt16 PlayerLoadFrames;
     [FieldOffset(1820)]
     public UInt16 AutomaticStageRefreshInterval;
     [FieldOffset(1822)]
     public UInt16 AutomaticStageRefreshTimer;
-    [FieldOffset(1968)]
+    [FieldOffset(1976)]
     [FramePrinter.FixedArrayAttribute(typeof(PlayerInformation), 10)]
     private fixed Byte _PlayerInfo_[1200];
     [FieldOffset(1816)]
     public Byte RealPlayers;
     [FieldOffset(1817)]
     public Byte TotalMarios;
-    [FieldOffset(1864)]
+    [FieldOffset(1872)]
     public AssetRef<Map> PreviousStage;
     [FieldOffset(1840)]
     public Int32 WinningTeam;
@@ -1422,10 +1458,10 @@ namespace Quantum {
     [FieldOffset(1856)]
     [AllocateOnComponentAdded()]
     public QDictionaryPtr<PlayerRef, EntityRef> PlayerDatas;
-    [FieldOffset(1860)]
+    [FieldOffset(1868)]
     [AllocateOnComponentAdded()]
     public QListPtr<BannedPlayerInfo> BannedPlayerIds;
-    [FieldOffset(1888)]
+    [FieldOffset(1896)]
     public FP Timer;
     public readonly FixedArray<Input> input {
       get {
@@ -1455,6 +1491,8 @@ namespace Quantum {
         hash = hash * 31 + BigStarSpawnTimer.GetHashCode();
         hash = hash * 31 + MainBigStar.GetHashCode();
         hash = hash * 31 + UsedStarSpawns.GetHashCode();
+        hash = hash * 31 + NextChaosEffectTimer.GetHashCode();
+        hash = hash * 31 + ActiveChaosEffects.GetHashCode();
         hash = hash * 31 + Rules.GetHashCode();
         hash = hash * 31 + (Byte)GameState;
         hash = hash * 31 + StartFrame.GetHashCode();
@@ -1478,11 +1516,13 @@ namespace Quantum {
       }
     }
     partial void ClearPointersPartial(FrameBase f, EntityRef entity) {
+      if (ActiveChaosEffects != default) f.FreeList(ref ActiveChaosEffects);
       Rules.ClearPointers(f, entity);
       PlayerDatas = default;
       BannedPlayerIds = default;
     }
     partial void AllocatePointersPartial(FrameBase f, EntityRef entity) {
+      f.TryAllocateList(ref ActiveChaosEffects);
       f.TryAllocateDictionary(ref PlayerDatas);
       f.TryAllocateList(ref BannedPlayerIds);
     }
@@ -1507,6 +1547,7 @@ namespace Quantum {
         serializer.Stream.Serialize(&p->AutomaticStageRefreshTimer);
         serializer.Stream.Serialize(&p->BigStarSpawnTimer);
         serializer.Stream.Serialize(&p->GameStartFrames);
+        serializer.Stream.Serialize(&p->NextChaosEffectTimer);
         serializer.Stream.Serialize(&p->PlayerLoadFrames);
         serializer.Stream.Serialize(&p->StartFrame);
         serializer.Stream.Serialize(&p->TotalGamesPlayed);
@@ -1515,6 +1556,7 @@ namespace Quantum {
         QBoolean.Serialize(&p->HasWinner, serializer);
         QBoolean.Serialize(&p->IsStartGameCountdownActive, serializer);
         QDictionary.Serialize(&p->PlayerDatas, serializer, Statics.SerializePlayerRef, Statics.SerializeEntityRef);
+        QList.Serialize(&p->ActiveChaosEffects, serializer, Statics.SerializeAssetRef);
         QList.Serialize(&p->BannedPlayerIds, serializer, Statics.SerializeBannedPlayerInfo);
         AssetRef.Serialize(&p->PreviousStage, serializer);
         Quantum.BitSet64.Serialize(&p->UsedStarSpawns, serializer);
@@ -2802,11 +2844,11 @@ namespace Quantum {
     [FieldOffset(15)]
     [ExcludeFromPrototype()]
     public Byte Lives;
-    [FieldOffset(88)]
+    [FieldOffset(84)]
     [ExcludeFromPrototype()]
     [AllocateOnComponentAdded()]
     [FreeOnComponentRemoved()]
-    public QListPtr<AssetRef<ChaosEffectBase>> ActiveChaosEffects;
+    public QListPtr<ChaosEffect> ActiveChaosEffects;
     [FieldOffset(68)]
     [ExcludeFromPrototype()]
     public QBoolean Disconnected;
@@ -2900,7 +2942,7 @@ namespace Quantum {
     [FieldOffset(152)]
     [ExcludeFromPrototype()]
     public EntityRef LastAttacker;
-    [FieldOffset(92)]
+    [FieldOffset(88)]
     [ExcludeFromPrototype()]
     [AllocateOnComponentAdded()]
     [FreeOnComponentRemoved()]
@@ -3119,7 +3161,7 @@ namespace Quantum {
         QBoolean.Serialize(&p->FireDeath, serializer);
         QBoolean.Serialize(&p->IsDead, serializer);
         QBoolean.Serialize(&p->IsRespawning, serializer);
-        QList.Serialize(&p->ActiveChaosEffects, serializer, Statics.SerializeAssetRef);
+        QList.Serialize(&p->ActiveChaosEffects, serializer, Statics.SerializeChaosEffect);
         QList.Serialize(&p->PowerupTransitionQueue, serializer, Statics.SerializePowerupTransitionAnimation);
         AssetRef.Serialize(&p->CharacterAsset, serializer);
         AssetRef.Serialize(&p->PhysicsAsset, serializer);
@@ -3727,6 +3769,7 @@ namespace Quantum {
   }
   public static unsafe partial class Constants {
     public const Int32 MaxStarSpawns = 64;
+    public const Int32 MaxChaosEffects = 67;
     public const Int32 EnemyMaxDistFromMario = 8;
     public const Int32 EnemyHomeBoxBuffer = 8;
     public const Int32 FireSnakeSegments = 5;
@@ -4595,6 +4638,7 @@ namespace Quantum {
     public static FrameSerializer.Delegate SerializeFPVector2;
     public static FrameSerializer.Delegate SerializeAssetRef;
     public static FrameSerializer.Delegate SerializeFP;
+    public static FrameSerializer.Delegate SerializeChaosEffect;
     public static FrameSerializer.Delegate SerializePowerupTransitionAnimation;
     public static FrameSerializer.Delegate SerializePhysicsQueryRef;
     public static FrameSerializer.Delegate SerializePhysicsContact;
@@ -4608,6 +4652,7 @@ namespace Quantum {
       SerializeFPVector2 = FPVector2.Serialize;
       SerializeAssetRef = AssetRef.Serialize;
       SerializeFP = FP.Serialize;
+      SerializeChaosEffect = Quantum.ChaosEffect.Serialize;
       SerializePowerupTransitionAnimation = Quantum.PowerupTransitionAnimation.Serialize;
       SerializePhysicsQueryRef = PhysicsQueryRef.Serialize;
       SerializePhysicsContact = Quantum.PhysicsContact.Serialize;
@@ -4641,6 +4686,7 @@ namespace Quantum {
       typeRegistry.Register(typeof(Button), Button.SIZE);
       typeRegistry.Register(typeof(CallbackFlags), 4);
       typeRegistry.Register(typeof(Quantum.CameraController), Quantum.CameraController.SIZE);
+      typeRegistry.Register(typeof(Quantum.ChaosEffect), Quantum.ChaosEffect.SIZE);
       typeRegistry.Register(typeof(CharacterController2D), CharacterController2D.SIZE);
       typeRegistry.Register(typeof(CharacterController3D), CharacterController3D.SIZE);
       typeRegistry.Register(typeof(Quantum.Coin), Quantum.Coin.SIZE);

@@ -1,0 +1,14 @@
+#define MaxChaosEffects 67
+
+global {
+	ushort NextChaosEffectTimer;
+	[AllocateOnComponentAdded,FreeOnComponentRemoved] list<AssetRef<ChaosEffectBase>> ActiveChaosEffects;
+}
+
+struct ChaosEffect {
+	AssetRef<ChaosEffectBase> ChaosEffectBase;
+	int EffectVariation;
+
+	FP RemainingTime;
+	int RemainingResets;
+}

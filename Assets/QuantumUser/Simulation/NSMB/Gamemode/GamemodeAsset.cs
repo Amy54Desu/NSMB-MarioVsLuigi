@@ -117,7 +117,7 @@ namespace Quantum {
         }
 
         public virtual ChaosEffectBase GetRandomChaos(Frame f) {
-            var stage = f.FindAsset<VersusStageData>(f.Map.UserAsset);
+            /*var stage = f.FindAsset<VersusStageData>(f.Map.UserAsset);
 
             FP totalChance = 0;
             foreach (AssetRef<ChaosEffectBase> chaosAsset in AllChaosEffects) {
@@ -143,9 +143,9 @@ namespace Quantum {
                 }
 
                 rand -= chance;
-            }
+            }*/
 
-            return null;
+            return f.FindAsset(AllChaosEffects[0]);
         }
 
         public abstract FP GetItemSpawnWeight(Frame f, CoinItemAsset item, int ourObjectiveCount);

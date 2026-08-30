@@ -46,6 +46,7 @@ namespace Quantum {
                 filter.Inputs = default;
             }
 
+            HandleChaosTimerTick(f, ref filter);
             var physics = f.FindAsset(filter.MarioPlayer->PhysicsAsset);
             if (HandleDeathAndRespawning(f, ref filter, stage)) {
                 HandleTerminalVelocity(f, ref filter, physics);
@@ -1557,6 +1558,20 @@ namespace Quantum {
             }
         }
 
+        private void HandleChaosTimerTick(Frame f, ref Filter filter) {
+            var mario = filter.MarioPlayer;
+
+            var list = f.ResolveList(mario->ActiveChaosEffects);
+            for (int i = list.Count - 1; i >= 0; i--) {
+                var chaos = list.GetPointer(i);
+                chaos->DecrementEffectTimer(f);
+
+                if (!chaos->IsEffectEnabled) {
+                    list.RemoveAt(i);
+                }
+            }
+        }
+
         private void HandlePowerupAnims(Frame f, ref Filter filter, MarioPlayerPhysicsInfo phyiscs, VersusStageData stage) {
             var mario = filter.MarioPlayer;
             var physicsObject = filter.PhysicsObject;
@@ -1614,13 +1629,29 @@ namespace Quantum {
             var mario = filter.MarioPlayer;
             var physicsObject = filter.PhysicsObject;
 
+            bool hasWaterChaos = false;
+            // scan all chaos effects
+            var chaosList = f.ResolveList(mario->ActiveChaosEffects);
+
+            for (int i = 0; i < chaosList.Count; i++) {
+                var chaos = chaosList.GetPointer(i);
+                if (!chaos->IsEffectEnabled) continue;
+
+                var chaosBase = f.FindAsset(chaos->ChaosEffectBase);
+                if (chaosBase.Type.HasFlag(ChaosEffectType.UnderwaterOverride)) {
+                    hasWaterChaos = true;
+                    physicsObject->UnderwaterCounter = 59;
+                    break;
+                }
+            }
+
             if (FPMath.Abs(physicsObject->Velocity.X) > Constants._0_1875 || physicsObject->Velocity.Y > 0 || mario->IsSliding) {
                 mario->StationaryFrames = 0;
             } else if (physicsObject->IsTouchingGround && mario->StationaryFrames < byte.MaxValue) {
                 mario->StationaryFrames++;
             }
 
-            if (!physicsObject->IsUnderwater || f.Exists(mario->CurrentPipe)) {
+            if ((!physicsObject->IsUnderwater || f.Exists(mario->CurrentPipe)) && !hasWaterChaos) {
                 return;
             }
 

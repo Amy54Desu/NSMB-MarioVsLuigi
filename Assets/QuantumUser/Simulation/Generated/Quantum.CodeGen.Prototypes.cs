@@ -256,6 +256,22 @@ namespace Quantum.Prototypes {
     }
   }
   [System.SerializableAttribute()]
+  [Quantum.Prototypes.Prototype(typeof(Quantum.ChaosEffect))]
+  public unsafe partial class ChaosEffectPrototype : StructPrototype {
+    public AssetRef<ChaosEffectBase> ChaosEffectBase;
+    public Int32 EffectVariation;
+    public FP RemainingTime;
+    public Int32 RemainingResets;
+    partial void MaterializeUser(Frame frame, ref Quantum.ChaosEffect result, in PrototypeMaterializationContext context);
+    public void Materialize(Frame frame, ref Quantum.ChaosEffect result, in PrototypeMaterializationContext context = default) {
+        result.ChaosEffectBase = this.ChaosEffectBase;
+        result.EffectVariation = this.EffectVariation;
+        result.RemainingTime = this.RemainingTime;
+        result.RemainingResets = this.RemainingResets;
+        MaterializeUser(frame, ref result, in context);
+    }
+  }
+  [System.SerializableAttribute()]
   [Quantum.Prototypes.Prototype(typeof(Quantum.Coin))]
   public unsafe partial class CoinPrototype : ComponentPrototype<Quantum.Coin> {
     public Quantum.QEnum8<CoinType> CoinType;

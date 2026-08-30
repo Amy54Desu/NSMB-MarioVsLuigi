@@ -113,6 +113,13 @@ namespace Quantum {
             return true;
         }
 
+        public readonly void AddChaosEffect(Frame f, ChaosEffectBase chaosEffect, FP? startingTime = null, int? resetCount = null, int? variation = null) {
+            var list = f.ResolveList(ActiveChaosEffects);
+            ChaosEffect newEffect = new();
+            newEffect.EnableEffect(f, chaosEffect, startingTime, resetCount, variation);
+            list.Add(newEffect);
+        }
+
         public readonly byte? GetTeam(Frame f) {
             var data = QuantumUtils.GetPlayerData(f, PlayerRef);
             if (data == null) {
